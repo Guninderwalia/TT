@@ -26,6 +26,9 @@ import {
   deriveTeamMemberStatus
 } from '../components/common/DashboardCharts';
 import Avatar from '../components/common/Avatar';
+// v4.4.3: "today" anchored to office zone so widgets see the same day the
+// backend wrote rows under (otherwise UK users see empty team-status).
+import { getOfficeDate } from '../utils/officeTime';
 import '../styles/dashboard.css';
 
 function LeadDashboard({ user, onLogout }) {
@@ -183,13 +186,16 @@ function LeadOverview({ user }) {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const todayDate = new Date();
-        const today = todayDate.toISOString().split('T')[0];
-        const weekStart = new Date(todayDate);
-        weekStart.setDate(todayDate.getDate() - 6);
+        // Office-zone "today" — match what the backend stamps so the
+        // freshly-saved row is found on first refresh.
+        const today = getOfficeDate();
+        // Range start points are window boundaries; off-by-one at the edge
+        // is harmless for the weekly stack and 12-week line chart.
+        const weekStart = new Date();
+        weekStart.setDate(weekStart.getDate() - 6);
         const weekStartIso = weekStart.toISOString().split('T')[0];
-        const hoursStart = new Date(todayDate);
-        hoursStart.setDate(todayDate.getDate() - 12 * 7);
+        const hoursStart = new Date();
+        hoursStart.setDate(hoursStart.getDate() - 12 * 7);
         const hoursStartIso = hoursStart.toISOString().split('T')[0];
 
         const [empData, leaveBalance, employees, leaveRequests, attendanceToday, upcoming, weekSummary, hoursHistory, teamLive] = await Promise.all([

@@ -20,7 +20,7 @@ import { generatePdf } from '../../utils/pdf/pdfGenerator';
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 function TimeLogging({ user }) {
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [selectedDate, setSelectedDate] = useState(getOfficeDate());
   const [timeLog, setTimeLog] = useState({
     startTime: '',
     breakStartTime: '',
@@ -356,9 +356,11 @@ function TimeLogging({ user }) {
   };
 
   // Are we viewing today's log? Buttons are only meaningful for today —
-  // there's no point pretending to "start work" two days ago.
-  const todayIso = new Date().toISOString().split('T')[0];
-  const isToday = selectedDate === todayIso;
+  // there's no point pretending to "start work" two days ago. Use the
+  // office-zone "today" so this matches what the backend stamps under;
+  // otherwise UK users (who default to UTC) see the buttons gated for
+  // hours of every day when the office (IST) is already on the next date.
+  const isToday = selectedDate === getOfficeDate();
 
   const handleEdit = (logId) => {
     const log = timeLogs.find(l => l.id === logId);
@@ -784,12 +786,12 @@ function TimeLogging({ user }) {
             type="date"
             value={selectedDate}
             onChange={(e) => setSelectedDate(e.target.value)}
-            max={new Date().toISOString().split('T')[0]}
+            max={getOfficeDate()}
             className="date-picker"
           />
           <button
             className="btn-today"
-            onClick={() => setSelectedDate(new Date().toISOString().split('T')[0])}
+            onClick={() => setSelectedDate(getOfficeDate())}
           >
             Today
           </button>

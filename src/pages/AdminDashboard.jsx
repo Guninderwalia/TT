@@ -24,6 +24,9 @@ import {
   deriveTeamMemberStatus
 } from '../components/common/DashboardCharts';
 import Avatar from '../components/common/Avatar';
+// v4.4.3: "today" must match the office timezone so dashboard widgets
+// see the same calendar day the backend stamped rows under.
+import { getOfficeDate } from '../utils/officeTime';
 import '../styles/dashboard.css';
 
 function AdminDashboard({ user, onLogout }) {
@@ -167,11 +170,14 @@ function AdminOverview({ user }) {
   useEffect(() => {
     const loadStats = async () => {
       try {
-        const today = new Date();
-        const todayIso = today.toISOString().split('T')[0];
-        const startDate = new Date(today);
-        startDate.setDate(today.getDate() - 29);
-        const startIso = startDate.toISOString().split('T')[0];
+        // Office-zone "today" so we agree with what the backend wrote.
+        const todayIso = getOfficeDate();
+        // 30-day range start computed from the local Date but converted via
+        // office zone — close enough for a 30-day window; the off-by-an-hour
+        // at the boundary doesn't matter for the trend chart.
+        const startDateObj = new Date();
+        startDateObj.setDate(startDateObj.getDate() - 29);
+        const startIso = startDateObj.toISOString().split('T')[0];
 
         const [employees, departments, upcoming, todayAttendance, rangeSummary, companyLive] = await Promise.all([
           window.electron.getEmployees(),

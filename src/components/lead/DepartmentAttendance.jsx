@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { getOfficeDate } from '../../utils/officeTime';
 
 function DepartmentAttendance({ user }) {
   const [attendance, setAttendance] = useState([]);
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [selectedDate, setSelectedDate] = useState(getOfficeDate());
   const location = useLocation();
   const navigate = useNavigate();
 

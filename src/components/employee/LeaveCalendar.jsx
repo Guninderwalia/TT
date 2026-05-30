@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { calculateLeaveAllocation, getLeaveAllocationDisplay } from '../../utils/leaveAllocationUtils';
 import ReasonPrompt from '../common/ReasonPrompt';
+import { getOfficeDate } from '../../utils/officeTime';
 import '../styles/leaveCalendar.css';
 
 function LeaveCalendar({ user }) {
@@ -119,7 +120,7 @@ function LeaveCalendar({ user }) {
   };
 
   const isDateInPast = (dateStr) => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = getOfficeDate();
     return dateStr < today;
   };
 
@@ -157,7 +158,7 @@ function LeaveCalendar({ user }) {
     }
 
     // Validate that dates are in the future
-    const today = new Date().toISOString().split('T')[0];
+    const today = getOfficeDate();
     if (selectedStartDate < today) {
       window.toast.warning('Leave requests can only be made for future dates');
       return;
@@ -527,7 +528,7 @@ function LeaveCalendar({ user }) {
                 <input
                   type="date"
                   value={selectedStartDate || ''}
-                  min={new Date().toISOString().split('T')[0]}
+                  min={getOfficeDate()}
                   onChange={e => {
                     const v = e.target.value;
                     setSelectedStartDate(v || null);
@@ -546,7 +547,7 @@ function LeaveCalendar({ user }) {
                   <input
                     type="date"
                     value={selectedEndDate || ''}
-                    min={selectedStartDate || new Date().toISOString().split('T')[0]}
+                    min={selectedStartDate || getOfficeDate()}
                     onChange={e => setSelectedEndDate(e.target.value || null)}
                     disabled={submitting || !selectedStartDate}
                   />

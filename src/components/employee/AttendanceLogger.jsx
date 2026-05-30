@@ -1,4 +1,10 @@
 import React, { useState, useEffect } from 'react';
+// v4.4.3: "today" must match the office timezone (set in Settings, default
+// Asia/Kolkata) — the backend stamps attendance rows under getOfficeDate(),
+// so the renderer needs to query for the same calendar day or sign-in
+// silently "reverts" because the freshly-written row doesn't match the
+// UTC date the renderer is asking for.
+import { getOfficeDate } from '../../utils/officeTime';
 
 function AttendanceLogger({ user }) {
   const [attendance, setAttendance] = useState([]);
@@ -14,7 +20,7 @@ function AttendanceLogger({ user }) {
   const loadAttendance = async () => {
     setLoading(true);
     try {
-      const today = new Date().toISOString().split('T')[0];
+      const today = getOfficeDate();
       const startDate = new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().split('T')[0];
       const endDate = today;
 
@@ -134,7 +140,7 @@ function AttendanceLogger({ user }) {
         <h3>Today's Check-In/Out</h3>
         <div className="attendance-today">
           <div className="today-info" style={{ color: '#f3f4f6' }}>
-            <p style={{ color: '#f3f4f6' }}><strong style={{ color: '#ffffff' }}>Date:</strong> {formatDate(new Date().toISOString().split('T')[0])}</p>
+            <p style={{ color: '#f3f4f6' }}><strong style={{ color: '#ffffff' }}>Date:</strong> {formatDate(getOfficeDate())}</p>
             {todayRecord && (
               <>
                 <p style={{ color: '#f3f4f6' }}><strong style={{ color: '#ffffff' }}>Sign In Time:</strong> {formatTime(todayRecord.signInTime)}</p>

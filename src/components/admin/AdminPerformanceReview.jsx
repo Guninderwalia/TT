@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import ManagerReviewForm from './ManagerReviewForm';
 import SkillAssessmentForm from './SkillAssessmentForm';
 import { buildPerformanceReviewDoc, generatePdf } from '../../utils/pdf/pdfGenerator';
+import { getOfficeDate } from '../../utils/officeTime';
 
 function AdminPerformanceReview({ user }) {
   const [employees, setEmployees] = useState([]);
@@ -11,7 +12,7 @@ function AdminPerformanceReview({ user }) {
     date.setDate(1);
     return date.toISOString().split('T')[0];
   });
-  const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
+  const [endDate, setEndDate] = useState(getOfficeDate());
   const [departmentFilter, setDepartmentFilter] = useState('');
   const [employeeFilter, setEmployeeFilter] = useState('');
   const [departments, setDepartments] = useState([]);

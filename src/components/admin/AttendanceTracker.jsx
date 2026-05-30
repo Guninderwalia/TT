@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { getOfficeDate } from '../../utils/officeTime';
 
 function AttendanceTracker() {
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [selectedDate, setSelectedDate] = useState(getOfficeDate());
   const [attendance, setAttendance] = useState([]);
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -31,8 +32,8 @@ function AttendanceTracker() {
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [holidays, setHolidays] = useState([]);
   const [bulkModalData, setBulkModalData] = useState({
-    startDate: new Date().toISOString().split('T')[0],
-    endDate: new Date().toISOString().split('T')[0],
+    startDate: getOfficeDate(),
+    endDate: getOfficeDate(),
     status: 'present',
     applyTo: 'all', // 'all' or specific employeeId
     selectedEmployeeId: ''
@@ -547,8 +548,8 @@ function AttendanceTracker() {
       window.toast.success(`Successfully updated ${successCount} of ${updates.length} records!`);
       setShowBulkModal(false);
       setBulkModalData({
-        startDate: new Date().toISOString().split('T')[0],
-        endDate: new Date().toISOString().split('T')[0],
+        startDate: getOfficeDate(),
+        endDate: getOfficeDate(),
         status: 'present',
         applyTo: 'all',
         selectedEmployeeId: ''

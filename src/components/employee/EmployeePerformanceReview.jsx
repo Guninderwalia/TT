@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { getOfficeDate } from '../../utils/officeTime';
 
 function EmployeePerformanceReview({ user }) {
   const [performanceData, setPerformanceData] = useState(null);
@@ -7,7 +8,7 @@ function EmployeePerformanceReview({ user }) {
     date.setDate(1);
     return date.toISOString().split('T')[0];
   });
-  const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
+  const [endDate, setEndDate] = useState(getOfficeDate());
   const [loading, setLoading] = useState(false);
   const [employeeInfo, setEmployeeInfo] = useState(null);
   const [managerReview, setManagerReview] = useState(null);
