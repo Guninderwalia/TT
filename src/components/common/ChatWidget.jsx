@@ -63,6 +63,11 @@ function ChatWidget({ user, onUnreadChange, mode = 'floating' }) {
   // Stream refs (the React-render <video> elements just point at these).
   const peerConnectionRef = useRef(null);
   const localStreamRef = useRef(null);
+  // v4.4.2: stash the remote stream so we can re-attach it once the in-call
+  // view actually mounts. Without this, pc.ontrack fires before the <video>
+  // element exists, attachStream silently no-ops against a null ref, and
+  // calls go one-way (caller sees/hears callee but not vice versa).
+  const remoteStreamRef = useRef(null);
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
   // ICE candidates that arrive before we've finished setting the remote
@@ -213,6 +218,7 @@ function ChatWidget({ user, onUnreadChange, mode = 'floating' }) {
       try { localStreamRef.current.getTracks().forEach(t => t.stop()); } catch (_) {}
     }
     localStreamRef.current = null;
+    remoteStreamRef.current = null;
     attachStream(localVideoRef, null);
     attachStream(remoteVideoRef, null);
     pendingIceRef.current = [];
@@ -223,6 +229,22 @@ function ChatWidget({ user, onUnreadChange, mode = 'floating' }) {
     setCallCameraOff(false);
     setCallIsVideo(true);
   };
+
+  // v4.4.2: when the in-call view actually mounts (after callState flips to
+  // 'in-call' or 'connecting'), re-attach the stashed streams. Without this,
+  // pc.ontrack runs before the <video> element exists, attachStream no-ops
+  // against the null ref, and the user sees a black screen / hears nothing
+  // from the other side — calls go one-way.
+  useEffect(() => {
+    if (callState === 'in-call' || callState === 'connecting') {
+      if (remoteStreamRef.current && remoteVideoRef.current && !remoteVideoRef.current.srcObject) {
+        attachStream(remoteVideoRef, remoteStreamRef.current);
+      }
+      if (localStreamRef.current && localVideoRef.current && !localVideoRef.current.srcObject) {
+        attachStream(localVideoRef, localStreamRef.current);
+      }
+    }
+  }, [callState, callIsVideo]);
 
   // Build a fresh RTCPeerConnection wired to the SSE signal relay. Returns
   // the pc so the caller can chain createOffer/createAnswer on it.
@@ -240,7 +262,11 @@ function ChatWidget({ user, onUnreadChange, mode = 'floating' }) {
 
     pc.ontrack = (e) => {
       const [remoteStream] = e.streams;
-      attachStream(remoteVideoRef, remoteStream);
+      // Save the stream first — the <video> element doesn't exist yet
+      // because the in-call UI hasn't rendered. The useEffect below
+      // re-attaches once callState flips to 'in-call' and the element mounts.
+      remoteStreamRef.current = remoteStream;
+      attachStream(remoteVideoRef, remoteStream); // also try now in case ref is already alive
       // Receiving tracks means we're past the negotiation phase.
       setCallState('in-call');
     };
@@ -551,8 +577,31 @@ function ChatWidget({ user, onUnreadChange, mode = 'floating' }) {
 
   const openAttachment = async (msg) => {
     if (!msg?.attachmentPath) return;
-    try { await window.electron.chatOpenAttachment(msg.attachmentPath); }
-    catch (err) { window.toast?.error?.('Could not open file: ' + (err?.message || err)); }
+    try {
+      // v4.4.2: always go via fetch-bytes + browser-download instead of
+      // chat:openAttachment (which uses shell.openPath, a no-op on the
+      // server-mode stub). Works identically on desktop and web — clicking
+      // a non-image attachment downloads the file via a temporary <a>.
+      const r = await window.electron.chatReadAttachment(msg.attachmentPath);
+      if (!r?.success || !r.data?.base64) {
+        window.toast?.error?.('Could not read file: ' + (r?.message || 'unknown error'));
+        return;
+      }
+      const binary = atob(r.data.base64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      const blob = new Blob([bytes], { type: msg.attachmentMime || 'application/octet-stream' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = msg.attachmentName || 'attachment';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (err) {
+      window.toast?.error?.('Could not open file: ' + (err?.message || err));
+    }
   };
 
   const refreshUnread = async () => {

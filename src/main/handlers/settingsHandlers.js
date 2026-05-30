@@ -108,7 +108,10 @@ function register(ipcMain, db) {
         oldValue: null,
         newValue: { filename, sizeBytes: buf.length }
       });
-      return { success: true, filename, data: buf };
+      // v4.4.2: base64 so the binary survives JSON-over-HTTP on the web
+      // build. Electron mode also accepts the same format — renderer
+      // base64-decodes into a Uint8Array before triggering the download.
+      return { success: true, filename, data: buf.toString('base64'), sizeBytes: buf.length };
     } catch (error) {
       console.error('[SETTINGS] backup error:', error);
       return { success: false, message: error.message };

@@ -146,9 +146,14 @@ function SettingsPage({ user }) {
         if (window.toast) window.toast.error('Backup failed: ' + (r?.message || 'Unknown error'));
         return;
       }
-      // r.data is a Node Buffer transferred over IPC; in the renderer it
-      // arrives as a Uint8Array-like. Wrap it in a Blob + trigger a download.
-      const blob = new Blob([r.data], { type: 'application/octet-stream' });
+      // v4.4.2: r.data is now a base64 string (so the binary survives
+      // JSON-over-HTTP on the web build). Decode back to bytes before the
+      // Blob — otherwise the downloaded file contains the literal base64
+      // text instead of the SQLite binary.
+      const binary = atob(r.data);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      const blob = new Blob([bytes], { type: 'application/octet-stream' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
