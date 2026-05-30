@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>TaskTango — Administrator Training Guide</title>
+<style>
+  @page { size: A4; margin: 2cm; }
+  body {
+    font-family: "Calibri", "Segoe UI", Arial, sans-serif;
+    font-size: 11pt;
+    line-height: 1.55;
+    color: #1f2937;
+    max-width: 820px;
+    margin: 40px auto;
+    padding: 0 32px;
+    background: #ffffff;
+  }
+  .role-banner {
+    background: linear-gradient(135deg, #1e3a8a 0%, #312e81 100%);
+    color: #ffffff;
+    padding: 4px 14px;
+    border-radius: 12px;
+    display: inline-block;
+    font-size: 10pt;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  h1 {
+    font-size: 28pt;
+    color: #1e3a8a;
+    margin: 0 0 4px;
+  }
+  .subtitle {
+    color: #6b7280;
+    font-size: 11pt;
+    margin-bottom: 24px;
+    font-style: italic;
+    border-bottom: 3px solid #1e3a8a;
+    padding-bottom: 12px;
+  }
+  h2 {
+    font-size: 16pt;
+    color: #1e3a8a;
+    margin-top: 32px;
+    margin-bottom: 10px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid #cbd5e1;
+  }
+  h3 {
+    font-size: 13pt;
+    color: #1e3a8a;
+    margin-top: 22px;
+    margin-bottom: 6px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0;
+    font-size: 10.5pt;
+  }
+  th {
+    background: #1e3a8a;
+    color: #ffffff;
+    padding: 9px 12px;
+    text-align: left;
+    font-weight: 600;
+  }
+  td {
+    padding: 9px 12px;
+    border-bottom: 1px solid #e5e7eb;
+    vertical-align: top;
+  }
+  tr:nth-child(even) td { background: #eff6ff; }
+  ol.steps {
+    counter-reset: step;
+    list-style: none;
+    padding: 0;
+    margin: 10px 0;
+  }
+  ol.steps li {
+    counter-increment: step;
+    padding: 8px 0 8px 38px;
+    position: relative;
+    border-bottom: 1px dashed #dbeafe;
+  }
+  ol.steps li:last-child { border-bottom: none; }
+  ol.steps li:before {
+    content: counter(step);
+    position: absolute;
+    left: 0;
+    top: 7px;
+    width: 26px;
+    height: 26px;
+    background: #1e3a8a;
+    color: #ffffff;
+    border-radius: 50%;
+    text-align: center;
+    font-weight: 700;
+    font-size: 11pt;
+    line-height: 26px;
+  }
+  .tab-card {
+    border: 1px solid #dbeafe;
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin: 14px 0;
+    background: #fbfdff;
+  }
+  .tab-card h3 {
+    margin-top: 0;
+    color: #1e3a8a;
+  }
+  .tab-card .icon {
+    font-size: 22pt;
+    margin-right: 8px;
+    vertical-align: -3px;
+  }
+  .tip {
+    background: #eff6ff;
+    border-left: 4px solid #2563eb;
+    padding: 10px 14px;
+    margin: 12px 0;
+    border-radius: 0 4px 4px 0;
+    font-size: 10.5pt;
+  }
+  .warn {
+    background: #fef3c7;
+    border-left: 4px solid #f59e0b;
+    padding: 10px 14px;
+    margin: 12px 0;
+    border-radius: 0 4px 4px 0;
+    font-size: 10.5pt;
+  }
+  .danger {
+    background: #fee2e2;
+    border-left: 4px solid #dc2626;
+    padding: 10px 14px;
+    margin: 12px 0;
+    border-radius: 0 4px 4px 0;
+    font-size: 10.5pt;
+  }
+  .footer {
+    margin-top: 50px;
+    border-top: 1px solid #d1d5db;
+    padding-top: 12px;
+    color: #6b7280;
+    font-size: 9.5pt;
+    text-align: center;
+  }
+  code {
+    background: #eff6ff;
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-family: "Consolas", "Courier New", monospace;
+    font-size: 10pt;
+    color: #1e3a8a;
+    font-weight: 600;
+  }
+  .pill {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 9.5pt;
+    font-weight: 600;
+    margin-right: 4px;
+  }
+  .pill-green { background: #d1fae5; color: #065f46; }
+  .pill-yellow { background: #fef3c7; color: #78350f; }
+  .pill-red { background: #fee2e2; color: #7f1d1d; }
+  /* Workflow steps */
+  .workflow {
+    margin: 16px 0;
+    padding: 16px;
+    background: #fafafa;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+  }
+  .wf-title {
+    font-weight: 700;
+    color: #1e3a8a;
+    font-size: 12pt;
+    margin-bottom: 10px;
+  }
+  .wf-step {
+    display: flex;
+    align-items: flex-start;
+    padding: 10px 14px;
+    border-radius: 8px;
+    margin: 6px 0;
+    border-left: 6px solid #d1d5db;
+    background: #ffffff;
+  }
+  .wf-step.you {
+    border-left-color: #1e3a8a;
+    background: #eff6ff;
+  }
+  .wf-step.outcome {
+    border-left-color: #facc15;
+    background: #fffbeb;
+  }
+  .wf-num {
+    width: 32px;
+    height: 32px;
+    background: #9ca3af;
+    color: #ffffff;
+    border-radius: 50%;
+    text-align: center;
+    line-height: 32px;
+    font-weight: 700;
+    margin-right: 14px;
+    flex-shrink: 0;
+  }
+  .wf-step.you .wf-num { background: #1e3a8a; }
+  .wf-step.outcome .wf-num { background: #facc15; color: #78350f; }
+  .wf-content { flex: 1; }
+  .wf-actor {
+    font-size: 9pt;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #6b7280;
+    font-weight: 700;
+    margin-bottom: 2px;
+  }
+  .wf-step.you .wf-actor { color: #1e3a8a; }
+  .wf-action {
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 2px;
+  }
+  .wf-result {
+    font-size: 10pt;
+    color: #6b7280;
+    font-style: italic;
+  }
+  .wf-arrow {
+    text-align: center;
+    font-size: 18pt;
+    color: #9ca3af;
+    line-height: 1;
+    margin: -2px 0;
+  }
+</style>
+</head>
+<body>
+
+<div class="role-banner">Administrator Edition</div>
+<h1>TaskTango — Administrator Guide</h1>
+<div class="subtitle">
+  How to run the system: employees, departments, holidays, payroll, performance, and audit trail. <strong>Updated for Production v3.5.</strong>
+</div>
+
+<!-- =================================================== -->
+
+<h2>🆕 What's New (V10 → V3.5)</h2>
+
+<p>This release rolls up everything from the V10 / V11 hotfix line through to V3.5. Below is a quick reference — the rest of the guide describes how each area works in detail.</p>
+
+<h3>Dashboard Analytics</h3>
+<p>The admin dashboard now shows three live charts under <strong>Analytics</strong>, sitting between the stat cards and the Probation table:</p>
+<ul>
+  <li><strong>Attendance — Last 30 Days:</strong> stacked area chart showing Present / Absent / Leave per day across the whole company.</li>
+  <li><strong>Headcount by Department:</strong> doughnut chart breaking the active workforce by department.</li>
+  <li><strong>Today's Attendance Status:</strong> doughnut showing the current-day split of Present / Absent / Leave / Half-day.</li>
+</ul>
+<p>The 30-day chart is powered by a new aggregation handler so it doesn't slow the dashboard down even on larger databases.</p>
+
+<h3>Offboarding Flow (replaces Delete-as-deactivate)</h3>
+<p>Employees → row actions now has a <strong>👋 Offboard</strong> button that records the departure properly instead of silently flipping a status flag:</p>
+<ol class="steps">
+  <li>Click <strong>Offboard</strong> on the employee's row.</li>
+  <li>Pick the <em>Last Working Day</em>, <em>Exit Reason</em> (Resignation / Termination / Contract End / Retirement), and optional notes.</li>
+  <li>Tick off the HR exit checklist: <em>Final salary processed · Security deposit refunded · Equipment returned · System access revoked</em>.</li>
+  <li>Confirm. The system flips the user to <code>inactive</code>, stamps <code>employment_records.end_date</code>, auto-cancels any pending leave requests starting after the last working day, and writes a full audit-log entry including the checklist.</li>
+</ol>
+<p>Toggle <strong>👥 Past Employees</strong> at the top of Employees to see the inactive list. Each past row has a <strong>↩️ Reactivate</strong> action if you need to bring them back.</p>
+
+<h3>Performance Review — Cleaner Filters</h3>
+<ul>
+  <li>The <em>Last Increment</em> column is gone — its data lives only inside the Edit Employee modal now.</li>
+  <li>New <strong>Employee</strong> dropdown sits after Department, so you can drill into a single person's KPIs instead of scanning the whole list.</li>
+  <li>The Department filter now actually works (the old version silently excluded everyone when a department was picked).</li>
+</ul>
+
+<h3>Chat Upgrade</h3>
+<p>The chat launcher moved to the dashboard header next to the 🔔 notification bell. It also gained:</p>
+<ul>
+  <li><strong>Desktop notifications</strong> for incoming messages when the chat panel is closed or the window isn't focused.</li>
+  <li><strong>Auto-jump</strong> straight to the most recent unread thread when you click 💬, instead of dumping you on a blank contact list.</li>
+  <li><strong>Pulsing unread badge</strong> so you can't miss it.</li>
+  <li><strong>Emoji picker</strong> (😊 in the composer) with ~80 popular emojis inserted at the cursor.</li>
+  <li><strong>File attachments</strong> via the 📎 button — up to 10 MB. Images preview inline; other files open in the default OS app on click.</li>
+</ul>
+
+<h3>Mobile-Responsive</h3>
+<p>The full app now adapts to tablet (≤900 px) and phone (≤540 px) screen widths. The sidebar collapses to a top bar, data tables get horizontal scroll, modals run near full-width, and stat grids stack into a single column. Useful when you need to approve something from a phone.</p>
+
+<h3>Leave Rollover Policy (V2.0)</h3>
+<p>Each leave type now has its own carry-forward / encashment policy editable from Settings. The system writes a per-employee rollover log every 1 January so you have a HR-compliance trail of who carried what.</p>
+
+<h2>Welcome</h2>
+
+<p>As an administrator, you set up and maintain everything in TaskTango. Employees and leads do the day-to-day work; you make sure the right people are in the right departments, payroll runs, holidays are scheduled, and the books balance.</p>
+
+<table>
+  <thead><tr><th>Your responsibility</th><th>Where you do it</th></tr></thead>
+  <tbody>
+    <tr><td>Add new employees and bulk-import staff</td><td>Employees</td></tr>
+    <tr><td>Create departments and assign team leads</td><td>Departments</td></tr>
+    <tr><td>View, correct, and bulk-mark attendance</td><td>Attendance</td></tr>
+    <tr><td>Add public holidays to the calendar</td><td>Holidays</td></tr>
+    <tr><td>Give final approval to leave requests</td><td>Leave Approvals</td></tr>
+    <tr><td>Review everyone's time logs</td><td>Time Logging</td></tr>
+    <tr><td>See company-wide performance scores</td><td>Performance Review</td></tr>
+    <tr><td>Process monthly payroll</td><td>Payroll</td></tr>
+    <tr><td>Track probation deposits</td><td>Security Deposits</td></tr>
+    <tr><td>Audit every change made in the system</td><td>Audit Logs</td></tr>
+  </tbody>
+</table>
+
+<h2>Getting Started</h2>
+
+<ol class="steps">
+  <li>Open TaskTango. Sign in with your administrator account (default username <code>admin</code>, password <code>password</code>; change it on first login).</li>
+  <li>You'll land on the Administrator Dashboard with the full menu on the left.</li>
+  <li>The very first time you use the system, work through Departments → Employees → Holidays in that order. Then everyone else can log in and the daily flow works.</li>
+</ol>
+
+<!-- =================================================== -->
+
+<h2>The Menu, One Tab at a Time</h2>
+
+<!-- Dashboard -->
+<div class="tab-card">
+  <h3><span class="icon">🏠</span>Dashboard</h3>
+  <p>Your control panel — total employees, today's attendance summary, pending approvals, and any alerts.</p>
+  <p><strong>What to do here:</strong> Glance at it once a day. If anything is red or showing pending approvals, click through to deal with it.</p>
+</div>
+
+<!-- Employees -->
+<div class="tab-card">
+  <h3><span class="icon">👥</span>Employees</h3>
+  <p>The master employee list. Everything about each person starts here.</p>
+  <p><strong>To add a single employee:</strong></p>
+  <ol class="steps">
+    <li>Click <strong>+ Add Employee</strong>.</li>
+    <li>Fill in name, email, phone, username, department, role, salary, start times, banking details, and joining date.</li>
+    <li>Tick <strong>Team Lead</strong> if they manage that department.</li>
+    <li>Save. The employee's initial password is <code>password</code> until they log in and change it.</li>
+  </ol>
+  <p><strong>To bulk-import:</strong></p>
+  <ol class="steps">
+    <li>Click <strong>Download Template</strong> to get a blank Excel file with the right column headings.</li>
+    <li>Fill in one row per employee in Excel.</li>
+    <li>Click <strong>Upload Employees</strong>, choose your file. The system shows a preview.</li>
+    <li>Confirm. All valid rows are created in one go.</li>
+  </ol>
+  <p><strong>To edit:</strong> Click the pencil icon next to an employee. Change anything and Save.</p>
+  <p><strong>To reset a password:</strong> Click the key icon next to the employee. They'll be told to set a new password on next login.</p>
+  <p><strong>To export everyone:</strong> Click <strong>Export Employees</strong> — you get an Excel file matching the import format.</p>
+  <div class="tip">
+    <strong>Tip:</strong> Always assign a department and a role. The role drives what menu the employee sees when they log in.
+  </div>
+</div>
+
+<!-- Departments -->
+<div class="tab-card">
+  <h3><span class="icon">🗂️</span>Departments</h3>
+  <p>Create and manage the company's departments (e.g. Evergrow, NCFS, Marketing, Accounting).</p>
+  <p><strong>To create a department:</strong> Click <strong>+ Add Department</strong>, give it a name and short description, save.</p>
+  <p><strong>To assign a team lead:</strong> Open a department, choose an employee from the dropdown, save. That person now sees the Lead Dashboard when they log in.</p>
+  <div class="warn">
+    <strong>Heads up:</strong> You can have only one lead per department at a time. Assigning a new one replaces the previous lead.
+  </div>
+</div>
+
+<!-- Attendance -->
+<div class="tab-card">
+  <h3><span class="icon">📅</span>Attendance</h3>
+  <p>The company-wide attendance grid. See who's present, absent, on leave, or marked half-day for any day or month.</p>
+  <p><strong>To bulk-mark days as present:</strong></p>
+  <ol class="steps">
+    <li>Select the date range and employees.</li>
+    <li>Click <strong>Mark Selected as Present</strong>.</li>
+    <li>Confirm. Useful for catching up after a system migration or training period.</li>
+  </ol>
+  <p><strong>To change one cell:</strong> Click the cell, choose a new status (Present / Absent / Leave / Half-day), save.</p>
+</div>
+
+<!-- Holidays -->
+<div class="tab-card">
+  <h3><span class="icon">🎉</span>Holidays</h3>
+  <p>The public holiday list used across calendars (leave, attendance, payroll).</p>
+  <p><strong>To add a holiday:</strong> Click <strong>+ Add Holiday</strong>, set the date, name, and a short description, save. It immediately appears on all employees' calendars.</p>
+  <p><strong>To edit or remove:</strong> Use the row-level Edit/Delete buttons.</p>
+  <div class="tip">
+    <strong>When to add holidays:</strong> Beginning of the year, plus any time the government declares an extra day off. Days marked as public holidays do not count against attendance or leave balance.
+  </div>
+</div>
+
+<!-- Leave Approvals -->
+<div class="tab-card">
+  <h3><span class="icon">✅</span>Leave Approvals</h3>
+  <p>The admin's leave queue — requests that have already been approved by a department lead and are waiting for your final sign-off.</p>
+  <p><strong>How to handle a request:</strong></p>
+  <ol class="steps">
+    <li>Read the employee, dates, days, reason, and the lead's notes.</li>
+    <li>Click <strong>Approve</strong> for final approval — this deducts the employee's leave balance and auto-marks those days as Leave in Attendance.</li>
+    <li>Click <strong>Reject</strong> if needed; you'll be prompted for a reason. The employee sees this.</li>
+  </ol>
+  <div class="warn">
+    <strong>Two-stage approval flow:</strong> Lead approves first → admin approves second. Balance is only deducted after <em>your</em> approval. Requests from leads themselves come straight to you, skipping stage one.
+  </div>
+</div>
+
+<!-- Time Logging -->
+<div class="tab-card">
+  <h3><span class="icon">⏰</span>Time Logging</h3>
+  <p>A read-only view of every employee's time logs, by month.</p>
+  <p><strong>What to do here:</strong> Spot people who haven't been logging hours, or who have unusually long or short days. Use it as a sanity check before running payroll.</p>
+</div>
+
+<!-- Performance -->
+<div class="tab-card">
+  <h3><span class="icon">📊</span>Performance Review</h3>
+  <p>Company-wide performance scores. Each employee has an Overall Score out of 100, broken into six metrics.</p>
+  <p><strong>The six metrics and their weights:</strong></p>
+  <table>
+    <tr><td>⭐ Skills</td><td><strong>40%</strong></td></tr>
+    <tr><td>👤 Manager Rating</td><td><strong>20%</strong></td></tr>
+    <tr><td>📅 Attendance</td><td>10%</td></tr>
+    <tr><td>⏰ Punctuality</td><td>10%</td></tr>
+    <tr><td>📊 Consistency</td><td>10%</td></tr>
+    <tr><td>🚦 Lateness</td><td>10%</td></tr>
+  </table>
+  <p><strong>Colour badges:</strong> <span class="pill pill-green">Green ≥ 80</span> <span class="pill pill-yellow">Yellow 60–79</span> <span class="pill pill-red">Red &lt; 60</span></p>
+  <p><strong>What to do here:</strong></p>
+  <ul>
+    <li>Filter by department or date range.</li>
+    <li>Click <strong>Review</strong> next to anyone to add a star rating (1–5) and written comments — feeds the Manager Rating.</li>
+    <li>Click <strong>Skills</strong> to rate them on individual skills (1–5) — feeds the Skills score.</li>
+  </ul>
+  <div class="tip">
+    See the separate <em>Performance Review Scoring Guide</em> for the full formula explained in plain English.
+  </div>
+</div>
+
+<!-- Payroll -->
+<div class="tab-card">
+  <h3><span class="icon">💷</span>Payroll</h3>
+  <p>Run monthly payroll for the whole company.</p>
+  <p><strong>To process a month:</strong></p>
+  <ol class="steps">
+    <li>Pick the payroll month and year.</li>
+    <li>Click <strong>Process Payroll</strong>. The system calculates each employee's base salary, overtime, bonuses, attendance deductions, probation deposit deductions, and net pay.</li>
+    <li>Review the table — make sure everyone looks right.</li>
+    <li>Add ad-hoc expenses or bonuses where needed.</li>
+    <li>Mark the run as <strong>Processed</strong> when payments are released.</li>
+  </ol>
+  <p><strong>Payslips:</strong> Once processed, each employee can view their payslip on their own dashboard.</p>
+</div>
+
+<!-- Deposits -->
+<div class="tab-card">
+  <h3><span class="icon">🔒</span>Security Deposits</h3>
+  <p>Probation-period security deposits for new joiners.</p>
+  <p><strong>To set up a deposit:</strong> Click <strong>+ Add Deposit</strong>, choose the employee, total deposit amount, and the months it should be deducted across (e.g. Jan–Feb of next year). Save.</p>
+  <p><strong>What happens:</strong> The system automatically deducts a portion each payroll month until the full amount is held. Once probation is completed, you can mark the deposit as <strong>Released</strong> to refund.</p>
+</div>
+
+<!-- Audit -->
+<div class="tab-card">
+  <h3><span class="icon">🛡️</span>Audit Logs</h3>
+  <p>A complete history of every change made in the system.</p>
+  <p><strong>What you see:</strong> Who did what, when, and the before/after values. Use filters to narrow by user, entity type (Employee / Leave / Payroll / etc.), or date range.</p>
+  <div class="tip">
+    <strong>Use this when:</strong> Someone asks "who changed X?" or "when was this updated?" — you'll find the answer here.
+  </div>
+</div>
+
+<!-- =================================================== -->
+
+<h2>Workflows — How Things Actually Flow</h2>
+
+<p>These show who does what, in what order. <strong>Your</strong> steps are highlighted in <span style="color:#1e3a8a; font-weight:700;">blue</span>. Steps done by other people are in grey.</p>
+
+<!-- LEAVE APPROVAL WORKFLOW -->
+<div class="workflow">
+  <div class="wf-title">✅ Leave Approval — You're the Final Stage</div>
+  <div class="wf-step">
+    <div class="wf-num">1</div>
+    <div class="wf-content">
+      <div class="wf-actor">Employee</div>
+      <div class="wf-action">Submits a leave request with dates, leave type, and a reason</div>
+      <div class="wf-result">Goes to their Department Lead first</div>
+    </div>
+  </div>
+  <div class="wf-arrow">↓</div>
+  <div class="wf-step">
+    <div class="wf-num">2</div>
+    <div class="wf-content">
+      <div class="wf-actor">Department Lead</div>
+      <div class="wf-action">Reviews and approves (or rejects with a reason)</div>
+      <div class="wf-result">If approved, forwarded to you</div>
+    </div>
+  </div>
+  <div class="wf-arrow">↓</div>
+  <div class="wf-step you">
+    <div class="wf-num">3</div>
+    <div class="wf-content">
+      <div class="wf-actor">You — Admin / MD</div>
+      <div class="wf-action">Open Leave Approvals · Final Approve or Reject</div>
+      <div class="wf-result">This is the step that actually deducts the employee's balance</div>
+    </div>
+  </div>
+  <div class="wf-arrow">↓</div>
+  <div class="wf-step outcome">
+    <div class="wf-num">✓</div>
+    <div class="wf-content">
+      <div class="wf-actor">Result</div>
+      <div class="wf-action">Leave balance deducted · attendance auto-marked as Leave for those days</div>
+      <div class="wf-result">Employee sees "Approved" · attendance score isn't impacted</div>
+    </div>
+  </div>
+  <p style="margin-top:10px; font-size:10pt; color:#6b7280;">
+    <strong>Note:</strong> When a Lead submits their own leave request, it skips stage 2 and lands directly with you.
+  </p>
+</div>
+
+<!-- NEW EMPLOYEE ONBOARDING WORKFLOW -->
+<div class="workflow">
+  <div class="wf-title">👤 New Employee Onboarding</div>
+  <div class="wf-step you">
+    <div class="wf-num">1</div>
+    <div class="wf-content">
+      <div class="wf-actor">You — Employees tab</div>
+      <div class="wf-action">Click + Add Employee · fill in name, email, department, role, salary, etc.</div>
+      <div class="wf-result">Or use Upload Employees with the Excel template for bulk</div>
+    </div>
+  </div>
+  <div class="wf-arrow">↓</div>
+  <div class="wf-step you">
+    <div class="wf-num">2</div>
+    <div class="wf-content">
+      <div class="wf-actor">You — Departments tab (if needed)</div>
+      <div class="wf-action">Mark them as Team Lead for their department</div>
+      <div class="wf-result">They'll see the Lead Dashboard when they log in</div>
+    </div>
+  </div>
+  <div class="wf-arrow">↓</div>
+  <div class="wf-step you">
+    <div class="wf-num">3</div>
+    <div class="wf-content">
+      <div class="wf-actor">You — share credentials with the new joiner</div>
+      <div class="wf-action">Tell them their username and the temporary password (default: <code>password</code>)</div>
+    </div>
+  </div>
+  <div class="wf-arrow">↓</div>
+  <div class="wf-step">
+    <div class="wf-num">4</div>
+    <div class="wf-content">
+      <div class="wf-actor">New employee — first login</div>
+      <div class="wf-action">Prompted to set a new password</div>
+      <div class="wf-result">Their leave balance is automatically seeded based on joining date (prorated)</div>
+    </div>
+  </div>
+  <div class="wf-arrow">↓</div>
+  <div class="wf-step outcome">
+    <div class="wf-num">✓</div>
+    <div class="wf-content">
+      <div class="wf-actor">Result</div>
+      <div class="wf-action">Employee is fully active and can sign in, log time, request leave</div>
+    </div>
+  </div>
+</div>
+
+<!-- PAYROLL WORKFLOW -->
+<div class="workflow">
+  <div class="wf-title">💷 Monthly Payroll</div>
+  <div class="wf-step">
+    <div class="wf-num">1</div>
+    <div class="wf-content">
+      <div class="wf-actor">Throughout the month — Employees</div>
+      <div class="wf-action">Sign in / out, log time, request leave</div>
+      <div class="wf-result">All feeds into payroll calculations</div>
+    </div>
+  </div>
+  <div class="wf-arrow">↓</div>
+  <div class="wf-step you">
+    <div class="wf-num">2</div>
+    <div class="wf-content">
+      <div class="wf-actor">You — start of next month</div>
+      <div class="wf-action">Open Payroll · pick the month / year · click Process Payroll</div>
+      <div class="wf-result">System calculates base salary, overtime, bonuses, deductions, probation deposits, net pay</div>
+    </div>
+  </div>
+  <div class="wf-arrow">↓</div>
+  <div class="wf-step you">
+    <div class="wf-num">3</div>
+    <div class="wf-content">
+      <div class="wf-actor">You — review and adjust</div>
+      <div class="wf-action">Check the calculated rows · add ad-hoc bonuses or expenses where needed</div>
+    </div>
+  </div>
+  <div class="wf-arrow">↓</div>
+  <div class="wf-step you">
+    <div class="wf-num">4</div>
+    <div class="wf-content">
+      <div class="wf-actor">You — release payments</div>
+      <div class="wf-action">Process the bank payments externally · mark the run as Processed in TaskTango</div>
+    </div>
+  </div>
+  <div class="wf-arrow">↓</div>
+  <div class="wf-step outcome">
+    <div class="wf-num">✓</div>
+    <div class="wf-content">
+      <div class="wf-actor">Result</div>
+      <div class="wf-action">Each employee can now view their payslip on their My Payslips tab</div>
+    </div>
+  </div>
+</div>
+
+<!-- PERFORMANCE REVIEW CYCLE -->
+<div class="workflow">
+  <div class="wf-title">📊 Performance Review Cycle</div>
+  <div class="wf-step">
+    <div class="wf-num">1</div>
+    <div class="wf-content">
+      <div class="wf-actor">Employees — continuous</div>
+      <div class="wf-action">Daily attendance / time logging</div>
+      <div class="wf-result">Builds Attendance, Punctuality, Consistency, Lateness (40% of score)</div>
+    </div>
+  </div>
+  <div class="wf-arrow">↓</div>
+  <div class="wf-step">
+    <div class="wf-num">2</div>
+    <div class="wf-content">
+      <div class="wf-actor">Department Leads — quarterly</div>
+      <div class="wf-action">Rate skills and write manager reviews for each team member</div>
+      <div class="wf-result">Builds Skills + Manager Rating (60% of score)</div>
+    </div>
+  </div>
+  <div class="wf-arrow">↓</div>
+  <div class="wf-step you">
+    <div class="wf-num">3</div>
+    <div class="wf-content">
+      <div class="wf-actor">You — review time</div>
+      <div class="wf-action">Open Performance Review · filter by department · spot anyone scoring red or yellow</div>
+      <div class="wf-result">Check if their score is real underperformance or just missing data</div>
+    </div>
+  </div>
+  <div class="wf-arrow">↓</div>
+  <div class="wf-step you">
+    <div class="wf-num">4</div>
+    <div class="wf-content">
+      <div class="wf-actor">You — fill in gaps</div>
+      <div class="wf-action">Where data is missing, nudge the Lead to rate skills / write reviews · or add your own</div>
+    </div>
+  </div>
+  <div class="wf-arrow">↓</div>
+  <div class="wf-step outcome">
+    <div class="wf-num">✓</div>
+    <div class="wf-content">
+      <div class="wf-actor">Result</div>
+      <div class="wf-action">Fair, data-driven scores across the whole company</div>
+    </div>
+  </div>
+</div>
+
+<h2>First-Time Setup Checklist</h2>
+
+<ol class="steps">
+  <li><strong>Change the default admin password.</strong> Bottom-left → Password → set a strong new one.</li>
+  <li><strong>Create departments</strong> (Departments tab).</li>
+  <li><strong>Add a Managing Director or Administrator account</strong> if needed (Employees → Add Employee, set role to MD or Administrator).</li>
+  <li><strong>Add this year's public holidays</strong> (Holidays tab).</li>
+  <li><strong>Bulk-import existing employees</strong> using the Excel template (Employees → Download Template → Upload Employees).</li>
+  <li><strong>Assign team leads</strong> for each department (Departments → choose lead).</li>
+  <li><strong>Let everyone log in.</strong> They'll be prompted to change their password on first login.</li>
+</ol>
+
+<!-- =================================================== -->
+
+<h2>Monthly Routine</h2>
+
+<table>
+  <thead><tr><th>When</th><th>Task</th></tr></thead>
+  <tbody>
+    <tr><td>Daily</td><td>Check Dashboard for pending leave approvals; clear them.</td></tr>
+    <tr><td>Weekly</td><td>Spot-check Attendance and Time Logging for anomalies.</td></tr>
+    <tr><td>End of month</td><td>Review Performance scores, fill any missing reviews/skills.</td></tr>
+    <tr><td>1st of month</td><td>Process Payroll for the previous month.</td></tr>
+    <tr><td>Quarterly</td><td>Review Audit Logs for unusual activity. Update probation deposits as employees pass probation.</td></tr>
+    <tr><td>Annually</td><td>Add next year's public holidays. Verify everyone's joining-date prorated leave entitlement is correct.</td></tr>
+  </tbody>
+</table>
+
+<!-- =================================================== -->
+
+<h2>Important Safety Notes</h2>
+
+<div class="danger">
+  <strong>Deleting an employee:</strong> This deactivates them — their historical data (payslips, attendance, leave) is preserved. Don't try to "remove" people by editing their records to look blank; just use the Delete button.
+</div>
+
+<div class="warn">
+  <strong>Bulk import overwrites?</strong> No — bulk import only creates new employees. If someone's email already exists, that row is skipped with an "Email already exists" note.
+</div>
+
+<div class="warn">
+  <strong>Resetting passwords:</strong> Once you reset someone's password, the old one stops working immediately. Make sure to tell the employee the temporary password is <code>password</code> (they'll change it on next login).
+</div>
+
+<!-- =================================================== -->
+
+<h2>Frequently Asked Questions</h2>
+
+<h3>An employee tells me they can't approve leave even though they're a Lead.</h3>
+<p>Check the Department they belong to and make sure they're set as "Team Lead" for that department. Open the employee in the Employees tab and look at the <em>Team Lead</em> checkbox; also confirm in Departments that they're the assigned lead.</p>
+
+<h3>Where is the Annual Leave entitlement set?</h3>
+<p>The default is 25 days per year, prorated by joining date. If you need a different default for new joiners, ask your IT team — it's controlled at install time.</p>
+
+<h3>An employee's performance score is showing zero even though they have time logs.</h3>
+<p>The most likely reason is they have no Manager Review and no Skill assessments yet — together those are 60% of the score. Give them a review and rate their skills via Performance Review → their row → Review / Skills buttons.</p>
+
+<h3>Can I run payroll for a single employee?</h3>
+<p>Payroll runs for the whole company at once, but you can edit a specific employee's row before marking the run as Processed.</p>
+
+<h3>Where do I see who deleted what?</h3>
+<p>Audit Logs. Filter by Action = DELETE or by the affected employee's ID.</p>
+
+<h3>An employee's leave balance looks wrong.</h3>
+<p>Open Leave Approvals or Audit Logs and check what's been approved this year. If the balance still looks off, re-opening the Leave Requests page for that user re-seeds their balance row from the current leave types.</p>
+
+<div class="footer">
+  TaskTango — Administrator Training Guide
+</div>
+
+</body>
+</html>

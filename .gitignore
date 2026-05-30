@@ -1,0 +1,62 @@
+# Dependencies
+node_modules/
+package-lock.json
+yarn.lock
+
+# Build outputs
+build/
+dist/
+out/
+
+# Development
+.env.local
+.env.development
+.env.test
+
+# OS
+.DS_Store
+Thumbs.db
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Electron
+*.exe
+*.dll
+
+# Database
+*.db
+*.sqlite
+
+# Cache
+.eslintcache
+.cache/
+
+# Temporary
+tmp/
+temp/
+*.tmp
+
+# Archives
+*.zip
+*.tar.gz
+*.rar
+
+# Debugging leftovers (asar dumps, stray test data, local DBs)
+temp_asar/
+local-data/
+app-check/
+~$*
+*.xlsx
+*.docx
+
+# Stray zero-byte file from an interrupted npm install
+/npm

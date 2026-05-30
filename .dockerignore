@@ -1,0 +1,26 @@
+# Keep the container image small + the build hermetic.
+node_modules
+build
+dist
+local-data
+.git
+.gitignore
+.env*
+*.zip
+*.exe
+*.dmg
+*.AppImage
+*.log
+**/.DS_Store
+**/.vs
+**/.vscode
+**/.idea
+public/training-guides/*.doc
+# Massive Excel + Word files in the repo root that aren't needed in the container.
+*.xlsx
+*.docx
+~$*
+*Workbook*
+# Build artefacts from the desktop pipeline.
+build/electron-builder.yaml
+release/

@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#080E1C" />
+    <meta name="description" content="TaskTango - Enterprise HR & CRM Desktop Application" />
+    <title>TaskTango</title>
+  </head>
+  <body>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <div id="root"></div>
+    <!--
+      Web Electron Shim - polyfills window.electron when running in a browser.
+      No-op when loaded inside the Electron desktop app (it detects existing window.electron).
+      The version query string forces browsers to re-fetch when the shim's
+      API surface changes; otherwise stale cached copies silently misbehave
+      (e.g. signIn() called with no userId because an older shim didn't
+      accept the argument).
+    -->
+    <script src="%PUBLIC_URL%/web-electron-shim.js?v=2.1.0"></script>
+  </body>
+</html>

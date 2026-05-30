@@ -1,0 +1,212 @@
+const { v4: uuidv4 } = require('uuid');
+const { writeAudit } = require('./_auditHelper');
+
+function register(ipcMain, db) {
+  ipcMain.handle('payroll:getData', async (event, { userId, month, year }) => {
+    try {
+      let payroll = await db.get(
+        `SELECT * FROM payroll
+         WHERE user_id = ? AND payroll_month = ? AND payroll_year = ?`,
+        [userId, month, year]
+      );
+
+      if (!payroll) {
+        // Calculate payroll for the month
+        payroll = await calculateMonthlyPayroll(db, userId, month, year);
+      }
+
+      return { success: true, data: payroll };
+    } catch (error) {
+      console.error('Get payroll data error:', error);
+      return { success: false, message: 'Failed to retrieve payroll' };
+    }
+  });
+
+  ipcMain.handle('payroll:processMonthly', async (event, { month, year, currentUserId }) => {
+    try {
+      const employees = await db.all(
+        `SELECT DISTINCT user_id FROM employment_records`
+      );
+
+      let processedCount = 0;
+      for (const emp of employees) {
+        const result = await calculateMonthlyPayroll(db, emp.user_id, month, year);
+        if (result.success) processedCount++;
+      }
+
+      await writeAudit(db, currentUserId || 'system', {
+        action: 'PAYROLL_PROCESS_MONTHLY',
+        entityType: 'PAYROLL',
+        entityId: `${year}-${String(month).padStart(2, '0')}`,
+        oldValue: null,
+        newValue: { month, year, processedCount }
+      });
+      return { success: true, message: `Processed ${processedCount} payrolls` };
+    } catch (error) {
+      console.error('Process monthly payroll error:', error);
+      return { success: false, message: 'Payroll processing failed' };
+    }
+  });
+
+  ipcMain.handle('payroll:addExpense', async (event, { payrollId, category, amount, description, currentUserId }) => {
+    try {
+      const expenseId = uuidv4();
+      await db.run(
+        `INSERT INTO monthly_expenses (id, payroll_id, category, amount, description)
+         VALUES (?, ?, ?, ?, ?)`,
+        [expenseId, payrollId, category, amount, description]
+      );
+
+      // Recalculate payroll net amount
+      await recalculatePayrollNet(db, payrollId);
+
+      await writeAudit(db, currentUserId || 'system', {
+        action: 'PAYROLL_EXPENSE_ADD',
+        entityType: 'PAYROLL_EXPENSE',
+        entityId: expenseId,
+        oldValue: null,
+        newValue: { payrollId, category, amount, description }
+      });
+      return { success: true, message: 'Expense added', expenseId };
+    } catch (error) {
+      console.error('Add expense error:', error);
+      return { success: false, message: 'Failed to add expense' };
+    }
+  });
+
+  ipcMain.handle('payroll:getHistory', async (event, { userId }) => {
+    try {
+      const history = await db.all(
+        `SELECT * FROM payroll
+         WHERE user_id = ?
+         ORDER BY payroll_year DESC, payroll_month DESC`,
+        [userId]
+      );
+      return { success: true, data: history };
+    } catch (error) {
+      console.error('Get payroll history error:', error);
+      return { success: false, message: 'Failed to retrieve history' };
+    }
+  });
+}
+
+async function calculateMonthlyPayroll(db, userId, month, year) {
+  try {
+    const employment = await db.get(
+      'SELECT * FROM employment_records WHERE user_id = ?',
+      [userId]
+    );
+
+    if (!employment) {
+      return { success: false, message: 'Employment record not found' };
+    }
+
+    const baseSalary = employment.base_salary;
+    const daysInMonth = new Date(year, month, 0).getDate();
+    const dailyRate = baseSalary / 26; // 6-day work week = 26 days/month
+
+    // Calculate late/early deduction
+    const attendanceRecords = await db.all(
+      `SELECT * FROM attendance
+       WHERE user_id = ? AND strftime('%m', date) = ? AND strftime('%Y', date) = ?`,
+      [userId, String(month).padStart(2, '0'), year]
+    );
+
+    let totalLateHours = 0;
+    let totalEarlyHours = 0;
+    let totalAbsentDays = 0;
+    let totalHalfDays = 0;
+
+    for (const record of attendanceRecords) {
+      if (record.status === 'Absent') totalAbsentDays += 1;
+      if (record.is_half_day) totalHalfDays += 1;
+      totalLateHours += record.late_hours || 0;
+      totalEarlyHours += record.early_departure_hours || 0;
+    }
+
+    // Deductions: Absent = full day, Half-Day = 50%, Late/Early = hourly
+    const hourlyRate = dailyRate / 9; // 9-hour work day
+    const absentDeduction = totalAbsentDays * dailyRate;
+    const halfDayDeduction = totalHalfDays * (dailyRate * 0.5);
+    const lateEarlyDeduction = (totalLateHours + totalEarlyHours) * hourlyRate;
+    const attendanceDeduction = absentDeduction + halfDayDeduction + lateEarlyDeduction;
+
+    // Get overtime amount
+    const overtimeRecords = await db.all(
+      `SELECT COALESCE(SUM(amount), 0) as total FROM overtime
+       WHERE user_id = ? AND strftime('%m', date) = ? AND strftime('%Y', date) = ? AND status = 'approved'`,
+      [userId, String(month).padStart(2, '0'), year]
+    );
+    const overtimeAmount = overtimeRecords[0]?.total || 0;
+
+    // Probation deposit deduction (first 2 months only)
+    let probationDeduction = 0;
+    const probationRecord = await db.get(
+      'SELECT * FROM probation_deposits WHERE user_id = ? AND status = ?',
+      [userId, 'held']
+    );
+
+    if (probationRecord && employment.is_probation) {
+      probationDeduction = probationRecord.deposit_amount / 2; // Split across 2 months
+    }
+
+    // Get monthly expenses
+    let bonusAmount = 0;
+    let reimbursementAmount = 0;
+
+    const existingPayroll = await db.get(
+      `SELECT id FROM payroll WHERE user_id = ? AND payroll_month = ? AND payroll_year = ?`,
+      [userId, month, year]
+    );
+
+    if (existingPayroll) {
+      const expenses = await db.all(
+        `SELECT * FROM monthly_expenses WHERE payroll_id = ?`,
+        [existingPayroll.id]
+      );
+      for (const exp of expenses) {
+        if (exp.category === 'Bonus') bonusAmount += exp.amount;
+        if (exp.category === 'Reimbursement') reimbursementAmount += exp.amount;
+      }
+    }
+
+    // Calculate totals
+    const grossAmount = baseSalary + overtimeAmount + bonusAmount + reimbursementAmount;
+    const netAmount = grossAmount - attendanceDeduction - probationDeduction;
+
+    // Insert or update payroll
+    const payrollId = uuidv4();
+    await db.run(
+      `INSERT OR REPLACE INTO payroll
+       (id, user_id, payroll_month, payroll_year, base_salary, overtime_amount, bonus_amount,
+        reimbursement_amount, attendance_deduction, probation_deposit_deduction, gross_amount, net_amount)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [payrollId, userId, month, year, baseSalary, overtimeAmount, bonusAmount,
+       reimbursementAmount, attendanceDeduction, probationDeduction, grossAmount, netAmount]
+    );
+
+    return { success: true, data: { id: payrollId, baseSalary, grossAmount, netAmount } };
+  } catch (error) {
+    console.error('Calculate payroll error:', error);
+    return { success: false, message: 'Payroll calculation failed' };
+  }
+}
+
+async function recalculatePayrollNet(db, payrollId) {
+  const payroll = await db.get('SELECT * FROM payroll WHERE id = ?', [payrollId]);
+  const expenses = await db.all(
+    'SELECT SUM(amount) as total FROM monthly_expenses WHERE payroll_id = ?',
+    [payrollId]
+  );
+
+  const expensesTotal = expenses[0]?.total || 0;
+  const newGross = payroll.base_salary + payroll.overtime_amount + expensesTotal;
+  const newNet = newGross - payroll.attendance_deduction - payroll.probation_deposit_deduction;
+
+  await db.run(
+    `UPDATE payroll SET gross_amount = ?, net_amount = ? WHERE id = ?`,
+    [newGross, newNet, payrollId]
+  );
+}
+
+module.exports = { register };

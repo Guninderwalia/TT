@@ -1,0 +1,65 @@
+# Fly.io app config for TaskTango server mode.
+#
+# Step-by-step deploy:
+#
+#   1. Pick a globally unique `app` name below (replace "tasktango" — Fly
+#      requires uniqueness across the whole platform).
+#   2. Pick `primary_region` closest to your users. List all with:
+#         fly platform regions
+#      Common choices: lhr (London), bom (Mumbai), sin (Singapore),
+#      iad (US East), syd (Sydney).
+#   3. Create the persistent volume IN THE SAME REGION:
+#         fly volumes create tasktango_data --size 1 --region <region>
+#   4. Deploy:
+#         fly deploy
+#   5. Open the URL:
+#         fly apps open
+#
+# First-run login: admin / password (you'll be forced to change it).
+
+app = "tasktango"
+primary_region = "lhr"
+
+# ---- Build ----------------------------------------------------------------
+[build]
+  dockerfile = "Dockerfile"
+
+# ---- HTTP service ---------------------------------------------------------
+# Fly terminates HTTPS for you and forwards plain HTTP to internal_port.
+# force_https = true means the public URL only accepts HTTPS, which is what
+# the browser needs for getUserMedia (camera/mic) to work for calls.
+[http_service]
+  internal_port = 8080
+  force_https = true
+  # auto_stop = false because the SSE chat stream needs a persistently
+  # running machine. If Fly suspends the machine between requests, chat
+  # disconnects and the unread badge stops updating.
+  auto_stop_machines = false
+  auto_start_machines = true
+  min_machines_running = 1
+  processes = ["app"]
+
+# ---- Persistent volume ----------------------------------------------------
+# Mount the SQLite DB + chat attachments + employee documents under /data
+# so they survive deploys + machine restarts. Volume must already exist:
+#   fly volumes create tasktango_data --size 1 --region <primary_region>
+[[mounts]]
+  source = "tasktango_data"
+  destination = "/data"
+
+# ---- Runtime env ----------------------------------------------------------
+[env]
+  NODE_ENV = "production"
+  USER_DATA_PATH = "/data"
+  # Office timezone — admins can override via Settings page after first login.
+  # The Settings table value wins over this env if both are set.
+  OFFICE_TIMEZONE = "Asia/Kolkata"
+
+# ---- Machine size ---------------------------------------------------------
+# Free tier covers shared-cpu-1x with 256MB. We bump memory to 512 because
+# react-build's output served by express + a busy chat SSE can spike near
+# the 256MB ceiling and the OOM killer takes the machine down. ~£3/mo.
+[[vm]]
+  cpu_kind = "shared"
+  cpus = 1
+  memory_mb = 512

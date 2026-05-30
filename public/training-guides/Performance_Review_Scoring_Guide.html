@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>TaskTango Performance Review — Scoring Guide</title>
+<style>
+  @page { size: A4; margin: 2cm; }
+  body {
+    font-family: "Calibri", "Segoe UI", Arial, sans-serif;
+    font-size: 11pt;
+    line-height: 1.5;
+    color: #1f2937;
+    max-width: 820px;
+    margin: 40px auto;
+    padding: 0 32px;
+    background: #ffffff;
+  }
+  h1 {
+    font-size: 26pt;
+    color: #1e3a8a;
+    margin-bottom: 4px;
+  }
+  .subtitle {
+    color: #6b7280;
+    font-size: 11pt;
+    margin-bottom: 28px;
+    font-style: italic;
+    border-bottom: 3px solid #1e3a8a;
+    padding-bottom: 12px;
+  }
+  h2 {
+    font-size: 16pt;
+    color: #1e3a8a;
+    margin-top: 30px;
+    margin-bottom: 12px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid #cbd5e1;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 14px 0;
+    font-size: 10.5pt;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  }
+  th {
+    background: #1e3a8a;
+    color: #ffffff;
+    padding: 10px 12px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 10.5pt;
+  }
+  th.center, td.center { text-align: center; }
+  th.right, td.right { text-align: right; }
+  td {
+    padding: 9px 12px;
+    border-bottom: 1px solid #e5e7eb;
+    vertical-align: top;
+  }
+  tr:nth-child(even) td { background: #f8fafc; }
+  td.weight {
+    font-weight: 700;
+    color: #1e3a8a;
+    font-size: 12pt;
+    text-align: center;
+  }
+  td.weight-big {
+    font-weight: 700;
+    color: #be123c;
+    font-size: 14pt;
+    text-align: center;
+  }
+  .pill {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 10pt;
+  }
+  .pill-green { background: #d1fae5; color: #065f46; }
+  .pill-yellow { background: #fef3c7; color: #78350f; }
+  .pill-red { background: #fee2e2; color: #7f1d1d; }
+  .key-box {
+    background: linear-gradient(135deg, #1e3a8a 0%, #312e81 100%);
+    color: #ffffff;
+    padding: 18px 22px;
+    border-radius: 8px;
+    margin: 18px 0;
+  }
+  .key-box .label {
+    font-size: 10pt;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    opacity: 0.8;
+  }
+  .key-box .value {
+    font-size: 22pt;
+    font-weight: 700;
+    color: #fbbf24;
+    margin-top: 2px;
+  }
+  .tip {
+    background: #eff6ff;
+    border-left: 4px solid #2563eb;
+    padding: 10px 14px;
+    margin: 12px 0;
+    font-size: 10.5pt;
+    border-radius: 0 4px 4px 0;
+  }
+  .footer {
+    margin-top: 40px;
+    border-top: 1px solid #d1d5db;
+    padding-top: 12px;
+    color: #6b7280;
+    font-size: 9.5pt;
+    text-align: center;
+  }
+  .icon {
+    display: inline-block;
+    width: 22px;
+    text-align: center;
+    font-size: 14pt;
+    margin-right: 6px;
+  }
+</style>
+</head>
+<body>
+
+<h1>Performance Review Scoring Guide</h1>
+<div class="subtitle">
+  How TaskTango calculates each employee's Overall Score, in plain English. <strong>Updated for Production v3.5.</strong>
+</div>
+
+<!-- =================================================== -->
+
+<h2>🆕 What's New in v3.5</h2>
+
+<ul>
+  <li><strong>Last Increment column removed.</strong> Salary-increment history is admin-only context and now lives only inside the Edit Employee modal. The table is cleaner without it.</li>
+  <li><strong>Employee filter</strong> sits after Department, so you can pull up one person's KPIs at a time instead of scanning the whole list.</li>
+  <li><strong>Department filter fixed.</strong> The previous version silently excluded everyone when a department was selected (an ID-type mismatch). It now returns just that department, as expected.</li>
+  <li>The scoring math itself hasn't changed — same six components, same weights — only the table UI did.</li>
+</ul>
+
+<!-- =================================================== -->
+
+<h2>The Overall Score at a Glance</h2>
+
+<p>Every employee's <strong>Overall Score</strong> is a single number out of 100, made up of six parts. Each part is worth a different share of the total — the bigger the share, the more it pushes the Overall Score up or down.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th style="width:36px">#</th>
+      <th>What it measures</th>
+      <th class="center">Share of the<br>Overall Score</th>
+      <th>How an employee improves it</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>1</td>
+      <td><span class="icon">⭐</span><strong>Skills</strong></td>
+      <td class="weight-big">40%</td>
+      <td>Get high ratings on individual skills (communication, teamwork, technical expertise, etc.) during skill assessments.</td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td><span class="icon">👤</span><strong>Manager Rating</strong></td>
+      <td class="weight-big">20%</td>
+      <td>Receive a high star rating (out of 5) from their direct manager during the review period.</td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td><span class="icon">📅</span>Attendance</td>
+      <td class="weight">10%</td>
+      <td>Show up for work. Approved leave days don't hurt this score — only unexcused absences do.</td>
+    </tr>
+    <tr>
+      <td>4</td>
+      <td><span class="icon">⏰</span>Punctuality</td>
+      <td class="weight">10%</td>
+      <td>Sign in on or before their scheduled start time on the days they're present.</td>
+    </tr>
+    <tr>
+      <td>5</td>
+      <td><span class="icon">📊</span>Consistency</td>
+      <td class="weight">10%</td>
+      <td>Log a full 8-hour day in Time Logging, regularly.</td>
+    </tr>
+    <tr>
+      <td>6</td>
+      <td><span class="icon">🚦</span>Lateness</td>
+      <td class="weight">10%</td>
+      <td>Keep late minutes low across the period (the fewer minutes late, the higher the score).</td>
+    </tr>
+    <tr style="background:#1e3a8a; color:white;">
+      <td colspan="2"><strong>TOTAL</strong></td>
+      <td class="center"><strong style="color:white; font-size:13pt;">100%</strong></td>
+      <td>—</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="tip">
+  <strong>Quick takeaway:</strong> 60% of an employee's score comes from <em>quality</em> measures (Skills + Manager Rating). The other 40% comes from <em>attendance and time-keeping</em> measures, split evenly into four 10% slices.
+</div>
+
+<!-- =================================================== -->
+
+<h2>How Each Metric is Calculated</h2>
+
+<!-- SKILLS -->
+<h3 style="margin-top:24px;"><span class="icon">⭐</span>Skills — 40%</h3>
+<table>
+  <tr><td style="width:38%"><strong>What it shows</strong></td><td>Average of all the employee's individual skill ratings (each 1–5 stars), scaled to a score out of 100.</td></tr>
+  <tr><td><strong>Top score (100)</strong></td><td>Every skill rated 5 out of 5.</td></tr>
+  <tr><td><strong>Half score (50)</strong></td><td>Skills averaging 2.5 out of 5.</td></tr>
+  <tr><td><strong>Zero (0)</strong></td><td>No skill assessments on record at all.</td></tr>
+  <tr><td><strong>Key point</strong></td><td>This is the biggest single factor — an employee with strong skill assessments has a 40-point head start before anything else is counted.</td></tr>
+</table>
+
+<!-- MANAGER -->
+<h3><span class="icon">👤</span>Manager Rating — 20%</h3>
+<table>
+  <tr><td style="width:38%"><strong>What it shows</strong></td><td>The most recent star rating (1–5) that the employee's manager has given them.</td></tr>
+  <tr>
+    <td><strong>Scale</strong></td>
+    <td>
+      ★★★★★ = 100<br>
+      ★★★★ ☆ = 80<br>
+      ★★★ ☆☆ = 60<br>
+      ★★ ☆☆☆ = 40<br>
+      ★ ☆☆☆☆ = 20<br>
+      No review yet = 0
+    </td>
+  </tr>
+  <tr><td><strong>Key point</strong></td><td>An un-reviewed employee can't score above 60% overall even with perfect attendance — managers should make sure reviews are kept current.</td></tr>
+</table>
+
+<!-- ATTENDANCE -->
+<h3><span class="icon">📅</span>Attendance — 10%</h3>
+<table>
+  <tr><td style="width:38%"><strong>What it shows</strong></td><td>The percentage of working days the employee was either at work OR on an approved leave (anything except "Absent").</td></tr>
+  <tr><td><strong>Top score (100)</strong></td><td>Marked as Present or Leave on every working day in the period.</td></tr>
+  <tr><td><strong>What hurts it</strong></td><td>Days marked Absent, or working days with no attendance record at all.</td></tr>
+  <tr><td><strong>What does NOT hurt it</strong></td><td>Approved leave days — these now count as attended (taking holiday won't drop your score).</td></tr>
+  <tr><td><strong>Sundays</strong></td><td>Not counted as working days, so they don't affect the score either way.</td></tr>
+</table>
+
+<!-- PUNCTUALITY -->
+<h3><span class="icon">⏰</span>Punctuality — 10%</h3>
+<table>
+  <tr><td style="width:38%"><strong>What it shows</strong></td><td>Of the days the employee was actually present (not on leave), the percentage where they signed in on or before their scheduled start time.</td></tr>
+  <tr><td><strong>Top score (100)</strong></td><td>On time every single day they were at work.</td></tr>
+  <tr><td><strong>How "on time" is judged</strong></td><td>Sign-in time compared against the employee's own scheduled start time (e.g. 09:00). Each employee can have a different start time.</td></tr>
+  <tr><td><strong>Maximum</strong></td><td>Capped at 100% — no score can exceed it.</td></tr>
+</table>
+
+<!-- CONSISTENCY -->
+<h3><span class="icon">📊</span>Consistency — 10%</h3>
+<table>
+  <tr><td style="width:38%"><strong>What it shows</strong></td><td>How close the employee's average logged hours are to a standard 8-hour day.</td></tr>
+  <tr><td><strong>Top score (100)</strong></td><td>Averaging 8+ hours of logged work per day.</td></tr>
+  <tr><td><strong>Half score (50)</strong></td><td>Averaging 4 hours per day.</td></tr>
+  <tr><td><strong>What's counted</strong></td><td>Only days where the employee actually logged time. Days with no log don't drag the score down — they just aren't included in the average.</td></tr>
+</table>
+
+<!-- LATENESS -->
+<h3><span class="icon">🚦</span>Lateness — 10%</h3>
+<table>
+  <tr><td style="width:38%"><strong>What it shows</strong></td><td>A penalty-style score: the more minutes late across the period, the lower the score.</td></tr>
+  <tr><td><strong>Top score (100)</strong></td><td>Never late, or always logging on or before scheduled start time.</td></tr>
+  <tr><td><strong>What hurts it</strong></td><td>Every minute past the scheduled start time accumulates, then is divided across total working minutes — the larger that ratio, the lower the score.</td></tr>
+  <tr><td><strong>No time logs?</strong></td><td>Score is 0 (we can't grade lateness without a baseline of logged hours).</td></tr>
+</table>
+
+<!-- =================================================== -->
+
+<h2>Worked Example</h2>
+
+<p>Here's what a typical employee with strong but imperfect performance would look like:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Metric</th>
+      <th>Raw result</th>
+      <th class="center">Score (out of 100)</th>
+      <th class="center">Weight</th>
+      <th class="right">Points added</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>⭐ Skills</strong></td>
+      <td>4.0 / 5 average skill rating</td>
+      <td class="center">80</td>
+      <td class="center">× 40%</td>
+      <td class="right"><strong>32.00</strong></td>
+    </tr>
+    <tr>
+      <td><strong>👤 Manager Rating</strong></td>
+      <td>4 out of 5 stars</td>
+      <td class="center">80</td>
+      <td class="center">× 20%</td>
+      <td class="right"><strong>16.00</strong></td>
+    </tr>
+    <tr>
+      <td>📅 Attendance</td>
+      <td>19 of 20 working days attended (incl. 2 days approved leave)</td>
+      <td class="center">95</td>
+      <td class="center">× 10%</td>
+      <td class="right"><strong>9.50</strong></td>
+    </tr>
+    <tr>
+      <td>⏰ Punctuality</td>
+      <td>16 of 19 present days on time</td>
+      <td class="center">84</td>
+      <td class="center">× 10%</td>
+      <td class="right"><strong>8.42</strong></td>
+    </tr>
+    <tr>
+      <td>📊 Consistency</td>
+      <td>Avg 7.8 hrs / logged day</td>
+      <td class="center">98</td>
+      <td class="center">× 10%</td>
+      <td class="right"><strong>9.75</strong></td>
+    </tr>
+    <tr>
+      <td>🚦 Lateness</td>
+      <td>3.2% lateness impact</td>
+      <td class="center">97</td>
+      <td class="center">× 10%</td>
+      <td class="right"><strong>9.68</strong></td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="key-box">
+  <div class="label">OVERALL SCORE</div>
+  <div class="value">85.35</div>
+  <div style="font-size:10pt; opacity:0.85; margin-top:4px;">
+    32.00 + 16.00 + 9.50 + 8.42 + 9.75 + 9.68
+  </div>
+</div>
+
+<!-- =================================================== -->
+
+<h2>Reading the Score</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th class="center" style="width:140px">Badge</th>
+      <th class="center" style="width:140px">Range</th>
+      <th>Interpretation</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class="center"><span class="pill pill-green">Green</span></td>
+      <td class="center"><strong>80–100</strong></td>
+      <td>Strong performance. Skills, attendance, and time-keeping are all working well.</td>
+    </tr>
+    <tr>
+      <td class="center"><span class="pill pill-yellow">Yellow</span></td>
+      <td class="center"><strong>60–79</strong></td>
+      <td>Acceptable but with clear room to improve. Look at which individual metrics are dragging it down.</td>
+    </tr>
+    <tr>
+      <td class="center"><span class="pill pill-red">Red</span></td>
+      <td class="center"><strong>0–59</strong></td>
+      <td>Needs attention. Often a sign that either skills assessments / manager reviews are missing, or attendance is poor.</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- =================================================== -->
+
+<h2>Things Worth Knowing</h2>
+
+<table>
+  <tr>
+    <td style="width:24px; padding-top:11px; font-size:14pt;">🟢</td>
+    <td><strong>Approved leave days don't penalise the employee.</strong> Annual leave or any non-absent status counts toward the Attendance score the same as a present day.</td>
+  </tr>
+  <tr>
+    <td style="padding-top:11px; font-size:14pt;">⚠️</td>
+    <td><strong>No data means no points.</strong> If an employee has no records at all (no attendance, no time logs, no review, no skills), the Overall Score is 0 — not an artificial baseline.</td>
+  </tr>
+  <tr>
+    <td style="padding-top:11px; font-size:14pt;">🎯</td>
+    <td><strong>Quality outweighs quantity.</strong> Skills (40%) plus Manager Rating (20%) together drive 60% of the score. Keep skill assessments and reviews current — they have the most influence.</td>
+  </tr>
+  <tr>
+    <td style="padding-top:11px; font-size:14pt;">📈</td>
+    <td><strong>Everything is capped at 100.</strong> Each individual metric is bounded between 0 and 100, so the Overall Score can never exceed 100.</td>
+  </tr>
+  <tr>
+    <td style="padding-top:11px; font-size:14pt;">🕒</td>
+    <td><strong>Time logs power two metrics.</strong> Both Consistency and Lateness rely on the Time Logging entries. Employees who don't log time will score 0 on both — even if their attendance is perfect.</td>
+  </tr>
+</table>
+
+<div class="footer">
+  TaskTango Performance Review Scoring Guide
+</div>
+
+</body>
+</html>

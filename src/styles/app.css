@@ -1,0 +1,598 @@
+/* =============================================================
+   Mobile-responsive tweaks.
+   Tablet (<=900px): sidebar collapses to a horizontal top bar,
+     stat grids stack, tables scroll horizontally.
+   Phone  (<=540px): nav icons only, modals near-full-width,
+     dashboard padding tightened, form grids stack.
+   ============================================================= */
+@media (max-width: 900px) {
+  /* Dashboard shell stacks vertically: sidebar above main content. */
+  html, body, #root {
+    height: auto;
+  }
+  body {
+    overflow: auto;
+  }
+  .dashboard-shell {
+    display: block !important;
+    height: auto !important;
+  }
+  .dashboard-content {
+    height: auto !important;
+    overflow: visible !important;
+  }
+  .dashboard-main {
+    overflow-y: visible !important;
+    padding: 20px !important;
+  }
+
+  /* Sidebar becomes a top bar */
+  .sidebar {
+    position: relative !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: auto !important;
+    border-right: none !important;
+    border-bottom: 1px solid var(--border);
+    overflow-y: visible !important;
+  }
+  .logo-area {
+    padding: 12px 16px;
+  }
+  .sidebar-nav {
+    display: flex !important;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 8px 12px !important;
+    overflow-x: auto;
+  }
+  .nav-group {
+    margin-bottom: 0 !important;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  .nav-group-label {
+    display: none !important;
+  }
+  .nav-btn {
+    width: auto !important;
+    padding: 8px 12px !important;
+    font-size: 12px !important;
+    border-left: none !important;
+    border-bottom: 2px solid transparent !important;
+  }
+  .nav-btn.active {
+    border-left-color: transparent !important;
+    border-bottom-color: var(--gold) !important;
+  }
+
+  .sidebar-footer {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px !important;
+    border-top: 1px solid var(--border);
+  }
+  .user-profile {
+    margin-bottom: 0 !important;
+    flex: 1;
+    min-width: 0;
+  }
+  .logout-btn {
+    width: auto !important;
+    padding: 8px 14px !important;
+  }
+
+  /* Header sizing */
+  .dashboard-header {
+    padding: 16px 20px !important;
+  }
+  .dashboard-header h1 {
+    font-size: 20px !important;
+  }
+
+  /* Stat cards: stack 1 per row */
+  .stats-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Tables get horizontal scroll so columns don't overlap. .form-section
+     is the common dashboard container — many bare <table>s live directly
+     inside it (no .table-wrapper), so scroll the section itself. */
+  .table-wrapper,
+  .form-section {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Modals: comfortable padding, still constrained */
+  .modal-content {
+    width: calc(100% - 32px) !important;
+    max-width: 100% !important;
+    margin: 16px !important;
+    padding: 20px !important;
+  }
+
+  /* Login: take more vertical room and shrink padding */
+  .login-container {
+    padding: 12px !important;
+  }
+}
+
+@media (max-width: 540px) {
+  /* Phone: nav icons only, even tighter padding, modals near full-width */
+  .logo-text {
+    display: none !important;
+  }
+  .nav-btn span {
+    display: none !important;
+  }
+  .nav-btn {
+    padding: 8px 10px !important;
+    justify-content: center;
+  }
+  .user-info {
+    display: none !important;
+  }
+  .user-profile {
+    justify-content: center;
+  }
+
+  .dashboard-header {
+    flex-wrap: wrap !important;
+    padding: 12px 16px !important;
+  }
+  .dashboard-header > div:first-child {
+    width: 100%;
+  }
+  .dashboard-header h1 {
+    font-size: 18px !important;
+  }
+  .dashboard-main {
+    padding: 16px !important;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Modals near-full-width with minimal margin */
+  .modal-content {
+    width: calc(100% - 16px) !important;
+    margin: 8px !important;
+    padding: 16px !important;
+    max-height: 92vh;
+    overflow-y: auto;
+  }
+}
+
+/* Light theme — applied when document.body has data-tt-theme="light".
+   The colour variables override the default dark-theme :root ones below.
+   The accent colours (gold / blue-accent / status colours) work on both
+   backgrounds so they're left to inherit from :root. */
+body[data-tt-theme="light"] {
+  /* Surfaces — light, layered cards */
+  --bg:    #f5f7fa;
+  --bg-2:  #ffffff;
+  --bg-3:  #eef2f6;
+  --bg-4:  #e3e9ef;
+
+  /* Borders — subtle dark on light */
+  --border:   rgba(0, 0, 0, 0.10);
+  --border-2: rgba(0, 0, 0, 0.16);
+
+  /* Text — dark on light */
+  --text:   #1a202c;
+  --text-2: #4a5568;
+  --text-3: #718096;
+
+  /* Slightly stronger background tint for the gold accent so it still pops */
+  --gold-dim:  rgba(245, 158, 11, 0.18);
+  --gold-glow: rgba(245, 158, 11, 0.14);
+  --blue-accent-dim: rgba(27, 123, 168, 0.18);
+
+  /* Status backgrounds — bump opacity so they're visible on a white card */
+  --green-bg:  rgba(16, 185, 129, 0.18);
+  --red-bg:    rgba(239, 68, 68, 0.18);
+  --amber-bg:  rgba(245, 158, 11, 0.18);
+  --blue-bg:   rgba(27, 123, 168, 0.18);
+  --purple-bg: rgba(167, 139, 250, 0.18);
+  --teal-bg:   rgba(20, 184, 166, 0.18);
+}
+
+/* The login screen's background gradient was hard-coded for dark mode. Swap
+   to a soft light gradient when the light theme is active. */
+body[data-tt-theme="light"] .login-container,
+body[data-tt-theme="light"] .login-bg {
+  background: linear-gradient(135deg, #eef2f6 0%, #d9e2ea 100%) !important;
+}
+
+:root {
+  /* Task Tango Financial Services Color Scheme */
+  /* Dark Navy Backgrounds */
+  --bg: #0f1f2e;
+  --bg-2: #1a3a52;
+  --bg-3: #244159;
+  --bg-4: #2d4a63;
+
+  /* Borders */
+  --border: rgba(255, 255, 255, 0.08);
+  --border-2: rgba(255, 255, 255, 0.14);
+
+  /* Accent Colors */
+  --gold: #f59e0b;
+  --gold-dim: rgba(245, 158, 11, 0.12);
+  --gold-glow: rgba(245, 158, 11, 0.08);
+  --blue-accent: #1b7ba8;
+  --blue-accent-dim: rgba(27, 123, 168, 0.12);
+
+  /* Text Colors */
+  --text: #ffffff;
+  --text-2: #b3d4e8;
+  --text-3: #6b92ac;
+
+  /* Status Colors */
+  --green: #10b981;
+  --green-bg: rgba(16, 185, 129, 0.12);
+  --red: #ef4444;
+  --red-bg: rgba(239, 68, 68, 0.12);
+  --amber: #f59e0b;
+  --amber-bg: rgba(245, 158, 11, 0.12);
+  --blue: #1b7ba8;
+  --blue-bg: rgba(27, 123, 168, 0.12);
+  --purple: #a78bfa;
+  --purple-bg: rgba(167, 139, 250, 0.12);
+  --teal: #14b8a6;
+  --teal-bg: rgba(20, 184, 166, 0.12);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  overflow: hidden;
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background: var(--bg);
+  gap: 24px;
+}
+
+.loader {
+  border: 4px solid var(--border);
+  border-top: 4px solid var(--gold);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  font-family: inherit;
+  transition: all 0.2s ease;
+}
+
+input, textarea, select {
+  font-family: inherit;
+  font-size: inherit;
+  color: var(--text);
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 12px;
+  transition: all 0.2s ease;
+}
+
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color: var(--text);
+  font-weight: 600;
+}
+
+a {
+  color: var(--gold);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+a:hover {
+  color: var(--gold);
+  text-decoration: underline;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.card {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  transition: all 0.2s ease;
+}
+
+.card:hover {
+  border-color: var(--gold);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.15);
+}
+
+.btn {
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-primary {
+  background: var(--gold);
+  color: #000;
+  font-weight: 600;
+}
+
+.btn-primary:hover {
+  background: #d97706;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.25);
+}
+
+.btn-secondary {
+  background: var(--bg-3);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.btn-secondary:hover {
+  background: var(--bg-4);
+}
+
+.btn-danger {
+  background: var(--red);
+  color: white;
+}
+
+.btn-danger:hover {
+  background: #f75c5c;
+}
+
+.badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.badge-success {
+  background: var(--green-bg);
+  color: var(--green);
+}
+
+.badge-warning {
+  background: var(--amber-bg);
+  color: var(--amber);
+}
+
+.badge-danger {
+  background: var(--red-bg);
+  color: var(--red);
+}
+
+.badge-info {
+  background: var(--blue-bg);
+  color: var(--blue);
+}
+
+.error-message {
+  background: var(--red-bg);
+  border: 1px solid var(--red);
+  color: var(--red);
+  padding: 12px 16px;
+  border-radius: 6px;
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+
+.success-message {
+  background: var(--green-bg);
+  border: 1px solid var(--green);
+  color: var(--green);
+  padding: 12px 16px;
+  border-radius: 6px;
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.table th {
+  background: var(--bg-3);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 16px;
+  text-align: left;
+  font-weight: 600;
+  color: var(--text);            /* was --text-2 (too dim on dark bg) */
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.table tbody tr:hover {
+  background: var(--bg-3);
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 30px;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.modal-content h3 {
+  margin-bottom: 24px;
+  font-size: 20px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+  width: 100%;
+}
+
+.form-group input:disabled,
+.form-group textarea:disabled,
+.form-group select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.form-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 30px;
+  justify-content: flex-end;
+}
+
+.form-actions .btn {
+  min-width: 120px;
+}
+
+.manager-container {
+  padding: 20px;
+}
+
+.manager-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+}
+
+.manager-header h2 {
+  font-size: 24px;
+}
+
+.empty-state {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-2);
+}
+
+@media (max-width: 768px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .modal-content {
+    width: 95%;
+    padding: 20px;
+  }
+
+  .form-actions {
+    flex-direction: column-reverse;
+  }
+
+  .form-actions .btn {
+    width: 100%;
+  }
+
+  .manager-header {
+    flex-direction: column;
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .manager-header .btn {
+    width: 100%;
+  }
+}
