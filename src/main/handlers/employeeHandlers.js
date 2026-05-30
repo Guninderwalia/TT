@@ -1348,8 +1348,17 @@ function register(ipcMain, db) {
       const excelUtils = require('../../utils/excelUtils');
       const exportBuffer = excelUtils.exportEmployeeData(employeesForExport, departments);
 
-      console.log(`[EXCEL] ✓ Exported ${employeesForExport.length} employees from SQLite`);
-      return { success: true, data: exportBuffer };
+      // Base64-encode so the binary survives JSON-over-HTTP (web mode) AND
+      // Electron IPC structured cloning. The renderer decodes back to bytes
+      // before constructing the download Blob. Without this the buffer
+      // round-trips as `{type:"Buffer",data:[...]}` and the resulting .xlsx
+      // is unreadable.
+      const base64 = Buffer.isBuffer(exportBuffer)
+        ? exportBuffer.toString('base64')
+        : Buffer.from(exportBuffer).toString('base64');
+
+      console.log(`[EXCEL] ✓ Exported ${employeesForExport.length} employees from SQLite (${base64.length} b64 chars)`);
+      return { success: true, data: base64 };
     } catch (error) {
       console.error('[EXCEL] Export employees error:', error);
       return { success: false, error: error.message };

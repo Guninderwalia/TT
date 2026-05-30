@@ -11,7 +11,13 @@
 # Optional env:
 #   OFFICE_TIMEZONE — IANA zone shown to users (default reads from settings table)
 
-FROM node:20-bookworm-slim AS base
+# trixie (Debian 13) has GLIBC 2.41, satisfying sqlite3's prebuilt binary
+# requirement of GLIBC >= 2.38. bookworm-slim (Debian 12 / GLIBC 2.36) tripped
+# "libm.so.6: version `GLIBC_2.38' not found" at startup. Forcing all native
+# modules to build from source instead would've worked, but lzma-native (a
+# transitive dev dep of electron-builder) doesn't compile cleanly — so the
+# newer base is the cleanest fix.
+FROM node:20-trixie-slim AS base
 
 # sqlite3 + bcryptjs ship native bindings that need build tools to compile.
 # We install them in a single layer and clean up apt cache so the image
@@ -27,15 +33,21 @@ WORKDIR /app
 
 # ---- Dependencies first so the layer caches when only source changes ----
 COPY package*.json ./
-# `npm install` over `ci` because lockfile may be out of sync with the
-# repo at deploy time. Switch to ci once the lockfile is in source control.
-RUN npm install --omit=dev --no-audit --no-fund
+# Install EVERYTHING (incl. devDependencies) — react-scripts is a dev dep and
+# we need it for the React build below. The trixie GLIBC (2.41) is new enough
+# for sqlite3's prebuilt binary so no source-build flag needed. We prune dev
+# deps right after the React build.
+RUN npm install --no-audit --no-fund
 
 # ---- Source ----
 COPY . .
 
 # ---- Build the React frontend ----
 RUN npm run server-build
+
+# ---- Strip devDependencies now that the build is done ----
+# Saves ~150 MB in the final image (react-scripts + electron-builder + co.)
+RUN npm prune --omit=dev --no-audit --no-fund
 
 # ---- Runtime config ----
 ENV NODE_ENV=production

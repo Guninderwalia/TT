@@ -1633,29 +1633,10 @@ ipcMain.handle('excel:generateTemplate', async () => {
   }
 });
 
-ipcMain.handle('excel:parseFile', async (event, { fileBuffer }) => {
-  try {
-    console.log('[EXCEL] Parsing employee file...');
-    const parseResult = excelUtils.parseEmployeeExcel(fileBuffer);
-    console.log(`[EXCEL] ✓ Parsed file: ${parseResult.validRows}/${parseResult.totalRows} valid rows`);
-    return { success: true, data: parseResult };
-  } catch (error) {
-    console.error('[EXCEL] Error parsing file:', error);
-    return { success: false, error: error.message };
-  }
-});
-
-ipcMain.handle('excel:validateData', async (event, { employees, departments }) => {
-  try {
-    console.log('[EXCEL] Validating employee data...');
-    const validation = excelUtils.validateEmployeeData(employees, departments);
-    console.log(`[EXCEL] ✓ Validation complete: ${validation.isValid ? 'Valid' : 'Invalid'}`);
-    return { success: true, data: validation };
-  } catch (error) {
-    console.error('[EXCEL] Error validating data:', error);
-    return { success: false, error: error.message };
-  }
-});
+// v4.4.1 — excel:parseFile + excel:validateData moved to
+// src/main/handlers/excelHandlers.js so the server-mode entry can register
+// them too. Registered here for the desktop path.
+require('./handlers/excelHandlers').register(ipcMain);
 
 ipcMain.handle('employee:bulkCreate', async (event, { employees }) => {
   try {

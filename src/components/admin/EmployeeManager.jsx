@@ -721,8 +721,15 @@ function EmployeeManager({ user = null }) {
 
       const result = await window.electron.exportEmployees();
       if (result.success) {
-        // Convert buffer to blob
-        const blob = new Blob([result.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        // v4.4.1: the backend returns the .xlsx body as a base64 string so
+        // the binary survives JSON-over-HTTP on the web build. Decode it
+        // back to a typed array before wrapping in the download Blob —
+        // otherwise the Blob ends up containing the literal base64 text and
+        // Excel rejects the file as corrupt.
+        const binary = atob(result.data);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+        const blob = new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
@@ -758,7 +765,19 @@ function EmployeeManager({ user = null }) {
       const reader = new FileReader();
       reader.onload = async (e) => {
         try {
-          const fileBuffer = e.target.result;
+          // v4.4.1: ship the file as a base64 string so it survives
+          // JSON-over-HTTP on the web build. Electron mode accepts the same
+          // base64 (the handler decodes it back to a Buffer).
+          const arrayBuffer = e.target.result;
+          const bytes = new Uint8Array(arrayBuffer);
+          let binary = '';
+          // Chunked to avoid `Maximum call stack size exceeded` for ~MB files
+          // that String.fromCharCode(...bytes) would hit when spread.
+          const CHUNK = 0x8000;
+          for (let i = 0; i < bytes.length; i += CHUNK) {
+            binary += String.fromCharCode.apply(null, bytes.subarray(i, i + CHUNK));
+          }
+          const fileBuffer = btoa(binary);
 
           // Parse Excel file
           setUploadProgress('Parsing Excel file...');

@@ -160,6 +160,10 @@ async function registerAll(db) {
   require('./handlers/departmentHandlers').register(ipcMain, db);
   require('./handlers/documentHandlers').register(ipcMain, db);
 
+  // v4.4.1 — Excel parse/validate handlers (previously inline in main.js, so
+  // server mode never had them). employee:bulkCreate IS in employeeHandlers.
+  require('./handlers/excelHandlers').register(ipcMain);
+
   const chatHandlers = require('./handlers/chatHandlers');
   chatHandlers.register(ipcMain, db);
   // webServer's SSE route reads this global to wire chat realtime.
