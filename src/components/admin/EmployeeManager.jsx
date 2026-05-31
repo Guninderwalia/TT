@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Avatar from '../common/Avatar';
 import EmployeeDocuments from '../common/EmployeeDocuments';
+import ProbationDepositPanel from '../common/ProbationDepositPanel';
 import ConfirmModal from '../common/ConfirmModal';
 import OffboardEmployeeModal from '../modals/OffboardEmployeeModal';
 import { buildOfferLetterDoc, generatePdf } from '../../utils/pdf/pdfGenerator';
@@ -1542,6 +1543,20 @@ function EmployeeManager({ user = null }) {
                       </tbody>
                     </table>
                   )}
+                </div>
+              )}
+
+              {/* v4.7.5 — Probation deposit panel with admin Release button.
+                  Only shown when editing — newly-created employees will have
+                  their deposit auto-created by the backend and visible after
+                  the form reopens. */}
+              {editingId && (
+                <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', marginTop: '20px', paddingTop: '10px' }}>
+                  <ProbationDepositPanel
+                    userId={editingId}
+                    canManage={true}
+                    currentUserId={user?.id}
+                  />
                 </div>
               )}
 

@@ -195,10 +195,13 @@ function exposeElectronAPI() {
   // Deposits
   getAllDeposits: () => ipcRenderer.invoke('deposit:getAll'),
   getDepositById: (id) => ipcRenderer.invoke('deposit:getById', { id }),
+  getDepositByUser: (userId) => ipcRenderer.invoke('deposit:getByUser', { userId }),
   createDeposit: (userId, depositAmount, deductionStartMonth, deductionEndMonth, currentUserId) =>
     ipcRenderer.invoke('deposit:create', { userId, depositAmount, deductionStartMonth, deductionEndMonth, currentUserId }),
   updateDeposit: (id, depositAmount, status, deductionStartMonth, deductionEndMonth, currentUserId) =>
     ipcRenderer.invoke('deposit:update', { id, depositAmount, status, deductionStartMonth, deductionEndMonth, currentUserId }),
+  releaseDeposit: (id, currentUserId, notes) =>
+    ipcRenderer.invoke('deposit:release', { id, currentUserId, notes }),
   deleteDeposit: (id, currentUserId) =>
     ipcRenderer.invoke('deposit:delete', { id, currentUserId }),
 

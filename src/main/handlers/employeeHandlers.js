@@ -326,6 +326,30 @@ function register(ipcMain, db) {
         [empId, userId, startDate, employmentType, baseSalary, isProbation, data.probationEndDate || null, data.startTime || '09:00', data.endTime || '18:00']
       );
 
+      // ---- v4.7.5 — Auto probation deposit ----
+      // New joiners give up their FIRST N months' salary as a refundable
+      // security deposit. The deposit accrues over N months, then admin
+      // releases it (typically at probation-end). Configurable via the
+      // `probation_deposit_months` app_setting; defaults to 2.
+      if (isProbation && baseSalary > 0) {
+        try {
+          const dmRow = await db.get(`SELECT value FROM app_settings WHERE key = 'probation_deposit_months'`);
+          const depositMonths = Math.max(0, parseInt(dmRow?.value || '2', 10) || 2);
+          if (depositMonths > 0) {
+            const depositAmount = baseSalary * depositMonths;
+            await db.run(
+              `INSERT INTO probation_deposits (id, user_id, deposit_amount, deduction_start_month, deduction_end_month, status, created_at, updated_at)
+               VALUES (?, ?, ?, ?, ?, 'held', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+              [uuidv4(), userId, depositAmount, 1, depositMonths]
+            );
+            console.log(`[EMPLOYEE] Auto-created probation deposit for ${data.fullName}: ₹${depositAmount} over ${depositMonths} month(s)`);
+          }
+        } catch (depErr) {
+          console.warn('[EMPLOYEE] probation deposit auto-create failed:', depErr.message);
+          // Don't block employee creation — admin can add the deposit row manually.
+        }
+      }
+
       // ---- Banking details (if provided) ----
       if (data.bankAccountNumber || data.bankName || data.accountName || data.ifscCode) {
         try {

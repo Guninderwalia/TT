@@ -139,15 +139,40 @@ async function calculateMonthlyPayroll(db, userId, month, year) {
     );
     const overtimeAmount = overtimeRecords[0]?.total || 0;
 
-    // Probation deposit deduction (first 2 months only)
+    // v4.7.5 — Probation deposit deduction.
+    //
+    // Rule: during the first N months from joining, the employee's WHOLE
+    // monthly salary is held back as a refundable security deposit. The
+    // deduction window is stored on the probation_deposits row as
+    // deduction_start_month..deduction_end_month (1-based, counted from
+    // the join month). Net pay for those months should be 0 (before any
+    // overtime / bonus), then normal salary from month N+1 onwards.
+    //
+    // Previously this divided deposit_amount by 2 every month the
+    // is_probation flag was on — buggy because (a) probation may be
+    // longer than 2 months so the deduction kept firing, (b) it had no
+    // concept of WHICH month this payroll was for.
     let probationDeduction = 0;
     const probationRecord = await db.get(
-      'SELECT * FROM probation_deposits WHERE user_id = ? AND status = ?',
-      [userId, 'held']
+      `SELECT * FROM probation_deposits WHERE user_id = ? AND status = 'held'`,
+      [userId]
     );
+    if (probationRecord && employment.start_date) {
+      // Month-of-employment for this payroll period (1-based).
+      // e.g. joined 2026-04-15, payroll for May 2026 → monthOfEmployment = 2.
+      const joinDate = new Date(employment.start_date + 'T12:00:00Z');
+      const joinYear  = joinDate.getUTCFullYear();
+      const joinMonth = joinDate.getUTCMonth() + 1; // 1-12
+      const monthOfEmployment = (year - joinYear) * 12 + (month - joinMonth) + 1;
 
-    if (probationRecord && employment.is_probation) {
-      probationDeduction = probationRecord.deposit_amount / 2; // Split across 2 months
+      const startM = probationRecord.deduction_start_month || 1;
+      const endM   = probationRecord.deduction_end_month   || 2;
+      if (monthOfEmployment >= startM && monthOfEmployment <= endM) {
+        // Deduct exactly one month's portion of the deposit, so net
+        // salary for the month works out to zero (before overtime / bonus).
+        const monthsInWindow = Math.max(1, endM - startM + 1);
+        probationDeduction = probationRecord.deposit_amount / monthsInWindow;
+      }
     }
 
     // Get monthly expenses

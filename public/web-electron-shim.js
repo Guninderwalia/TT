@@ -344,12 +344,15 @@
     // Deposits
     getAllDeposits: () => invoke('deposit:getAll'),
     getDepositById: (id) => invoke('deposit:getById', { id }),
+    getDepositByUser: (userId) => invoke('deposit:getByUser', { userId }),
     createDeposit: (userId, depositAmount, deductionStartMonth, deductionEndMonth, currentUserId) =>
       invoke('deposit:create', { userId, depositAmount, deductionStartMonth, deductionEndMonth, currentUserId }),
     updateDeposit: (id, depositAmount, status, deductionStartMonth, deductionEndMonth, currentUserId) =>
       invoke('deposit:update', { id, depositAmount, status, deductionStartMonth, deductionEndMonth, currentUserId }),
     deleteDeposit: (id, currentUserId) =>
       invoke('deposit:delete', { id, currentUserId }),
+    releaseDeposit: (id, currentUserId, notes) =>
+      invoke('deposit:release', { id, currentUserId, notes }),
 
     // System
     getAppVersion: () => invoke('system:getVersion'),

@@ -7,6 +7,7 @@ import LeaveCalendar from '../components/employee/LeaveCalendar';
 import TimeLogging from '../components/employee/TimeLogging';
 import EmployeePerformanceReview from '../components/employee/EmployeePerformanceReview';
 import EmployeeDocuments from '../components/common/EmployeeDocuments';
+import ProbationDepositPanel from '../components/common/ProbationDepositPanel';
 import OrgChart from '../components/common/OrgChart';
 import ChatWidget from '../components/common/ChatWidget';
 import logoImage from '../assets/logo.png';
@@ -251,6 +252,11 @@ function EmployeeOverview({ user }) {
               </div>
             </div>
           )}
+
+          {/* v4.7.5 — Probation security deposit, read-only for the employee.
+              Reassures them their first months' salary isn't lost — it's held
+              and released after probation. */}
+          <ProbationDepositPanel userId={user.id} canManage={false} currentUserId={user.id} />
         </div>
       </div>
 

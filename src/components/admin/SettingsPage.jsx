@@ -351,6 +351,10 @@ function SettingsPage({ user }) {
               on dashboards. Default is Sunday only. */}
           <WeeklyOffDaysPanel />
 
+          {/* v4.7.5 — How many months of salary to hold as a probation
+              security deposit for new joiners. Default 2. */}
+          <ProbationDepositMonthsPanel />
+
           {/* v4.6 — Active session management — admins can also see this
               same panel for THEIR account; the same component is mounted
               for non-admins via the dashboard pages. */}
@@ -581,6 +585,80 @@ function WeeklyOffDaysPanel() {
 
       <p style={{ margin: '12px 0 0', fontSize: 11.5, color: 'var(--text-2, #9ca3af)' }}>
         Common patterns: <strong>Sun</strong> (India / Middle East 6-day week) · <strong>Sat + Sun</strong> (UK / US 5-day week) · <strong>Fri + Sat</strong> (Saudi / UAE).
+      </p>
+    </div>
+  );
+}
+
+// v4.7.5 — How many months of salary new joiners give up as a refundable
+// security deposit. Default 2.  Setting this to 0 turns the auto-create
+// off entirely.
+function ProbationDepositMonthsPanel() {
+  const [months, setMonths]   = React.useState(2);
+  const [loaded, setLoaded]   = React.useState(false);
+  const [saving, setSaving]   = React.useState(false);
+  const [savedAt, setSavedAt] = React.useState(null);
+
+  React.useEffect(() => {
+    (async () => {
+      try {
+        const r = await window.electron.getSetting('probation_deposit_months');
+        const raw = r?.value ?? r?.data?.value ?? r;
+        const n = parseInt(raw, 10);
+        if (!isNaN(n) && n >= 0) setMonths(n);
+      } catch (_) {}
+      finally { setLoaded(true); }
+    })();
+  }, []);
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      await window.electron.setSetting('probation_deposit_months', String(months));
+      setSavedAt(new Date());
+      window.toast?.success?.(`Probation deposit set to ${months} month${months === 1 ? '' : 's'} for new joiners.`);
+    } finally { setSaving(false); }
+  };
+
+  return (
+    <div style={{
+      background: 'var(--bg-3, #1f2937)',
+      border: '1px solid var(--border, #374151)',
+      borderRadius: 10,
+      padding: '18px 22px',
+      margin: '16px 0'
+    }}>
+      <h3 style={{ margin: '0 0 6px', fontSize: 16, color: 'var(--text, #f3f4f6)' }}>
+        🏦 Probation Security Deposit
+      </h3>
+      <p style={{ margin: '0 0 14px', fontSize: 12.5, color: 'var(--text-2, #9ca3af)' }}>
+        New joiners' first <strong>N months' salary</strong> is withheld as a refundable security deposit. After probation completes, an admin clicks <strong>Release Deposit</strong> on the employee profile to return it. Set to <strong>0</strong> to disable entirely.
+      </p>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+        <label style={{ fontSize: 13 }}>Months to withhold:</label>
+        <input
+          type="number"
+          min={0}
+          max={12}
+          value={months}
+          onChange={(e) => setMonths(Math.max(0, Math.min(12, parseInt(e.target.value, 10) || 0)))}
+          disabled={!loaded}
+          style={{
+            width: 80, padding: '6px 10px',
+            background: 'var(--bg-2, #111827)', color: 'var(--text, #f3f4f6)',
+            border: '1px solid var(--border, #374151)', borderRadius: 6,
+            fontSize: 14, textAlign: 'center'
+          }}
+        />
+        <button onClick={save} disabled={saving || !loaded} className="btn btn-primary" style={{ padding: '8px 16px' }}>
+          {saving ? 'Saving…' : 'Save'}
+        </button>
+        {savedAt && (
+          <span style={{ fontSize: 12, color: 'var(--text-2)' }}>Saved at {savedAt.toLocaleTimeString()}</span>
+        )}
+      </div>
+      <p style={{ margin: '10px 0 0', fontSize: 11.5, color: 'var(--text-2, #9ca3af)', fontStyle: 'italic' }}>
+        Only applies to NEW employees created after this is saved. Existing employees keep their original deposit amount.
       </p>
     </div>
   );

@@ -233,7 +233,66 @@ function register(ipcMain, db) {
     }
   });
 
-  console.log('[DEPOSIT] ✓ All 5 deposit handlers registered');
+  // v4.7.5 — Get the deposit for one user. Used by the employee profile
+  // panel to show the current balance + held/released state without
+  // having to filter the entire deposit list client-side.
+  ipcMain.handle('deposit:getByUser', async (event, { userId } = {}) => {
+    try {
+      if (!userId) return { success: false, message: 'userId required' };
+      const row = await db.get(
+        `SELECT pd.*, er.start_date AS joining_date, er.base_salary
+           FROM probation_deposits pd
+           LEFT JOIN employment_records er ON er.user_id = pd.user_id
+          WHERE pd.user_id = ?`,
+        [userId]
+      );
+      return { success: true, data: row || null };
+    } catch (error) {
+      console.error('deposit:getByUser error:', error);
+      return { success: false, message: error.message };
+    }
+  });
+
+  // v4.7.5 — Release a held deposit. Stamps released_date + status='released'
+  // so payroll stops deducting (deduction window check is the primary gate
+  // but status=released is the explicit signal). Idempotent — no-op if
+  // already released.
+  ipcMain.handle('deposit:release', async (event, { id, currentUserId, notes } = {}) => {
+    try {
+      if (!id) return { success: false, message: 'id required' };
+      const before = await db.get('SELECT * FROM probation_deposits WHERE id = ?', [id]);
+      if (!before) return { success: false, message: 'Deposit not found' };
+      if (before.status === 'released') {
+        return { success: true, message: 'Deposit was already released', data: before };
+      }
+
+      const today = new Date().toISOString().split('T')[0];
+      await db.run(
+        `UPDATE probation_deposits
+            SET status = 'released',
+                released_date = ?,
+                notes = COALESCE(?, notes),
+                updated_at = CURRENT_TIMESTAMP
+          WHERE id = ?`,
+        [today, notes || null, id]
+      );
+
+      await db.run(
+        `INSERT INTO audit_logs (id, user_id, action, entity_type, entity_id, old_value, new_value, timestamp)
+         VALUES (?, ?, 'DEPOSIT_RELEASE', 'Deposit', ?, ?, ?, CURRENT_TIMESTAMP)`,
+        [uuidv4(), currentUserId || 'system', id,
+         JSON.stringify({ status: before.status, released_date: before.released_date }),
+         JSON.stringify({ status: 'released', released_date: today, notes })]
+      );
+
+      return { success: true, message: 'Deposit released', releasedDate: today };
+    } catch (error) {
+      console.error('deposit:release error:', error);
+      return { success: false, message: error.message };
+    }
+  });
+
+  console.log('[DEPOSIT] ✓ Deposit handlers registered (incl. getByUser + release)');
 }
 
 module.exports = { register };
