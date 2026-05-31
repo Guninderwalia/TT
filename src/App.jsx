@@ -19,8 +19,10 @@ applyTheme(getTheme());
 
 // Bump this single constant when packaging a new build. The label is rendered
 // in the bottom-right corner on every screen (incl. login) so it's easy to
-// confirm which version is running.
-const BUILD_VERSION = 'Production v2.1';
+// confirm which version is running. Click the badge to open the About modal.
+const BUILD_VERSION = 'Production v4.5';
+const APP_DEVELOPER = 'Guninder Ahluwalia';
+const APP_YEAR      = new Date().getFullYear();
 
 // Intercept window.alert so the dozens of existing alert(...) calls render
 // as non-blocking toasts. Routed by content heuristics so the colour matches
@@ -55,28 +57,93 @@ if (typeof window !== 'undefined' && !window.__alertPatched) {
   window.__alertPatched = true;
 }
 
-function BuildBadge() {
+function BuildBadge({ onClick }) {
   return (
-    <div
-      title={`TaskTango ${BUILD_VERSION}`}
+    <button
+      onClick={onClick}
+      title={`TaskTango ${BUILD_VERSION} — click for About`}
       style={{
         position: 'fixed',
         right: '10px',
         bottom: '8px',
         padding: '3px 9px',
         borderRadius: '10px',
-        background: 'rgba(0, 0, 0, 0.45)',
+        background: 'rgba(0, 0, 0, 0.55)',
         color: '#d1d5db',
         fontSize: '11px',
         fontWeight: 600,
         letterSpacing: '0.4px',
         fontFamily: 'Consolas, "Courier New", monospace',
-        pointerEvents: 'none',
+        border: '1px solid rgba(255,255,255,0.12)',
+        cursor: 'pointer',
         zIndex: 9999,
         userSelect: 'none'
       }}
     >
       Build {BUILD_VERSION}
+    </button>
+  );
+}
+
+// About modal — opened by clicking the build badge or from the desktop Help
+// menu. Same content runs in the web build (where there is no native menu)
+// so users can see who built it and which version they're on.
+function AboutModal({ onClose }) {
+  return (
+    <div
+      className="modal-overlay"
+      onClick={onClose}
+      style={{
+        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)',
+        zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center'
+      }}
+    >
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{
+          background: 'var(--bg-2, #1a3a52)', color: 'var(--text, #fff)',
+          minWidth: 340, maxWidth: '90vw', padding: '24px 28px',
+          borderRadius: 12, boxShadow: '0 16px 40px rgba(0,0,0,0.45)',
+          border: '1px solid rgba(255,255,255,0.08)',
+          textAlign: 'center'
+        }}
+      >
+        <h2 style={{ marginTop: 0, marginBottom: 6, fontSize: 22 }}>TaskTango</h2>
+        <div style={{
+          fontFamily: 'Consolas, "Courier New", monospace',
+          fontSize: 13, color: 'var(--text-2, #9ca3af)', marginBottom: 18
+        }}>
+          {BUILD_VERSION}
+        </div>
+
+        <div style={{ textAlign: 'left', fontSize: 13, lineHeight: 1.7 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.08)', padding: '6px 0' }}>
+            <span style={{ color: 'var(--text-2, #9ca3af)' }}>Developed by</span>
+            <strong>{APP_DEVELOPER}</strong>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.08)', padding: '6px 0' }}>
+            <span style={{ color: 'var(--text-2, #9ca3af)' }}>Build year</span>
+            <strong>{APP_YEAR}</strong>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0' }}>
+            <span style={{ color: 'var(--text-2, #9ca3af)' }}>Platform</span>
+            <strong>{typeof window !== 'undefined' && window.electron && !window.__isWebShim ? 'Desktop (Electron)' : 'Web'}</strong>
+          </div>
+        </div>
+
+        <p style={{ fontSize: 11, color: 'var(--text-2, #9ca3af)', marginTop: 18, marginBottom: 0 }}>
+          Enterprise HR &amp; Employee Management
+        </p>
+
+        <button
+          onClick={onClose}
+          className="btn btn-primary"
+          style={{ marginTop: 18, padding: '8px 22px' }}
+          autoFocus
+        >
+          Close
+        </button>
+      </div>
     </div>
   );
 }
@@ -144,6 +211,7 @@ function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [theme, setTheme] = useTheme();
+  const [showAbout, setShowAbout] = useState(false);
 
   // v4.3: pull the admin-configured office timezone once on mount and sync
   // internet time so every renderer-side time stamp uses the right zone +
@@ -347,7 +415,8 @@ function App() {
       {showShortcuts && (
         <ShortcutsHelp onClose={() => setShowShortcuts(false)} />
       )}
-      <BuildBadge />
+      <BuildBadge onClick={() => setShowAbout(true)} />
+      {showAbout && <AboutModal onClose={() => setShowAbout(false)} />}
     </>
   );
 }
