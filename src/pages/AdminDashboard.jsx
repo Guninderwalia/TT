@@ -171,6 +171,10 @@ function AdminOverview({ user }) {
   const [summary30d, setSummary30d] = useState([]);
   // v4.2: company-wide live "who's on right now" snapshot.
   const [companyToday, setCompanyToday] = useState([]);
+  // v4.7.1 — true if today is Sat/Sun or a public holiday. Drives the
+  // "On Holiday" label on the live status widget so the dashboard doesn't
+  // turn red on weekends.
+  const [isNonWorkingToday, setIsNonWorkingToday] = useState(false);
 
   useEffect(() => {
     const loadStats = async () => {
@@ -184,7 +188,7 @@ function AdminOverview({ user }) {
         startDateObj.setDate(startDateObj.getDate() - 29);
         const startIso = startDateObj.toISOString().split('T')[0];
 
-        const [employees, departments, upcoming, todayAttendance, rangeSummary, companyLive] = await Promise.all([
+        const [employees, departments, upcoming, todayAttendance, rangeSummary, companyLive, nonWorking] = await Promise.all([
           window.electron.getEmployees(),
           window.electron.getDepartments(),
           // No departmentId → admin sees ALL upcoming approved leaves
@@ -192,8 +196,13 @@ function AdminOverview({ user }) {
           window.electron.getAttendanceByDate(todayIso),
           window.electron.getAttendanceRangeSummary(startIso, todayIso),
           // No departmentId → company-wide live snapshot (admins see everyone).
-          window.electron.getTeamToday()
+          window.electron.getTeamToday(),
+          // v4.7.1 — ask the backend if today is a non-working day so the
+          // status widget can show "On Holiday" instead of red "Absent" rows
+          // for everyone who didn't sign in.
+          window.electron.isTodayNonWorking ? window.electron.isTodayNonWorking() : Promise.resolve({ isNonWorking: false })
         ]);
+        setIsNonWorkingToday(!!nonWorking?.isNonWorking);
         setStats({
           totalEmployees: employees.data?.length || 0,
           departments: departments.data?.length || 0,
@@ -277,7 +286,7 @@ function AdminOverview({ user }) {
           Sits ABOVE the historical Analytics block to mirror the lead view. */}
       <h3 style={{ marginTop: '24px', marginBottom: '8px', color: 'var(--text)' }}>Live Employee Status</h3>
       <div className="charts-grid">
-        <TeamLiveStatusChart teamRows={companyToday} title="Company Status — Right Now" />
+        <TeamLiveStatusChart teamRows={companyToday} title="Company Status — Right Now" isNonWorkingDay={isNonWorkingToday} />
         <div className="chart-card">
           <h3 className="chart-card-title">Who's On Right Now</h3>
           <div className="chart-card-body" style={{ height: 260, overflowY: 'auto', padding: '4px 2px' }}>
@@ -286,7 +295,7 @@ function AdminOverview({ user }) {
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {companyToday.map(row => {
-                  const s = deriveTeamMemberStatus(row);
+                  const s = deriveTeamMemberStatus(row, isNonWorkingToday);
                   return (
                     <div key={row.userId} style={{
                       display: 'flex', alignItems: 'center', gap: 10,

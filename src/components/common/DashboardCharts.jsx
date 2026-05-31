@@ -214,36 +214,52 @@ export const TEAM_STATUS = {
   SIGNED_OFF:  { key: 'signed-off',  label: 'Signed Off',  color: '#3b82f6' },
   NOT_STARTED: { key: 'not-started', label: 'Not Started', color: '#94a3b8' },
   ABSENT:      { key: 'absent',      label: 'Absent',      color: '#ef4444' },
-  ON_LEAVE:    { key: 'on-leave',    label: 'On Leave',    color: '#a78bfa' }
+  ON_LEAVE:    { key: 'on-leave',    label: 'On Leave',    color: '#a78bfa' },
+  // v4.7.1 — purple-ish, distinct from On Leave to avoid confusion. Used
+  // when today is Sat/Sun (or in the public_holidays table) for any
+  // employee who didn't sign in. Anyone who DID sign in still shows
+  // their real status (Working / Signed Off etc.) because sign-in trumps
+  // the holiday label — they clearly chose to work.
+  ON_HOLIDAY:  { key: 'on-holiday',  label: 'On Holiday',  color: '#6366f1' }
 };
 
-export function deriveTeamMemberStatus(row) {
+// v4.7.1 — Added `isNonWorkingDay` flag. When true, employees who never
+// signed in are labelled "On Holiday" rather than the misleading "Absent"
+// / "Not Started" pair that filled the dashboard every Sunday morning.
+// Sign-in always wins the priority order so someone who works a weekend
+// keeps their real status (Working / Signed Off / etc.).
+export function deriveTeamMemberStatus(row, isNonWorkingDay = false) {
   const s = (row?.attendanceStatus || '').toLowerCase();
-  if (s === 'absent')   return TEAM_STATUS.ABSENT;
-  if (s === 'leave')    return TEAM_STATUS.ON_LEAVE;
-  if (!row?.startTime)  return TEAM_STATUS.NOT_STARTED;
-  if (row?.endTime)     return TEAM_STATUS.SIGNED_OFF;
-  if (row?.breakStartTime && !row?.breakEndTime) return TEAM_STATUS.ON_BREAK;
-  return TEAM_STATUS.WORKING;
+  // Real working signals always come first — they prove the person showed
+  // up regardless of what attendance.status says.
+  if (s === 'leave')                                return TEAM_STATUS.ON_LEAVE;
+  if (row?.endTime)                                 return TEAM_STATUS.SIGNED_OFF;
+  if (row?.breakStartTime && !row?.breakEndTime)    return TEAM_STATUS.ON_BREAK;
+  if (row?.startTime)                               return TEAM_STATUS.WORKING;
+  // No sign-in:
+  if (isNonWorkingDay)                              return TEAM_STATUS.ON_HOLIDAY;
+  if (s === 'absent')                               return TEAM_STATUS.ABSENT;
+  return TEAM_STATUS.NOT_STARTED;
 }
 
 // New for v4.1 — Live "right now" team status. Doughnut counts grouped by
 // the six statuses above. Pair this with the roster list below it in the
 // LeadOverview render so leads can see both shape and detail at a glance.
-export function TeamLiveStatusChart({ teamRows = [], title = 'Team Status — Right Now' }) {
+export function TeamLiveStatusChart({ teamRows = [], title = 'Team Status — Right Now', isNonWorkingDay = false }) {
   const counts = {
     [TEAM_STATUS.WORKING.key]:     0,
     [TEAM_STATUS.ON_BREAK.key]:    0,
     [TEAM_STATUS.SIGNED_OFF.key]:  0,
     [TEAM_STATUS.NOT_STARTED.key]: 0,
     [TEAM_STATUS.ABSENT.key]:      0,
-    [TEAM_STATUS.ON_LEAVE.key]:    0
+    [TEAM_STATUS.ON_LEAVE.key]:    0,
+    [TEAM_STATUS.ON_HOLIDAY.key]:  0
   };
   for (const row of teamRows) {
-    const s = deriveTeamMemberStatus(row);
+    const s = deriveTeamMemberStatus(row, isNonWorkingDay);
     counts[s.key]++;
   }
-  const order = [TEAM_STATUS.WORKING, TEAM_STATUS.ON_BREAK, TEAM_STATUS.NOT_STARTED, TEAM_STATUS.SIGNED_OFF, TEAM_STATUS.ABSENT, TEAM_STATUS.ON_LEAVE];
+  const order = [TEAM_STATUS.WORKING, TEAM_STATUS.ON_BREAK, TEAM_STATUS.NOT_STARTED, TEAM_STATUS.SIGNED_OFF, TEAM_STATUS.ABSENT, TEAM_STATUS.ON_LEAVE, TEAM_STATUS.ON_HOLIDAY];
   const labels = order.map(s => s.label);
   const data   = order.map(s => counts[s.key]);
   const colors = order.map(s => s.color);

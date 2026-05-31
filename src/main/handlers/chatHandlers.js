@@ -595,6 +595,17 @@ function register(ipcMain, db) {
       }
       const officeTime = require('../../utils/officeTime');
       const today = officeTime.getOfficeDate();
+
+      // v4.7.1 — Is today a non-working day? If so, anyone who DIDN'T
+      // sign in shows as "On holiday" instead of "Absent" / "Offline".
+      // Uses the same helper the cron uses so the two never disagree.
+      let nonWorking = false;
+      try {
+        const { isNonWorkingDay } = require('../cronJobs');
+        const check = await isNonWorkingDay(db, today);
+        nonWorking = !!check?.skip;
+      } catch (_) { /* helper missing on old build — fall through */ }
+
       // One query for both joins keyed by user id.
       const placeholders = userIds.map(() => '?').join(',');
       const rows = await db.all(
@@ -609,16 +620,33 @@ function register(ipcMain, db) {
         [today, today, ...userIds]
       );
 
+      // v4.7.1 — Priority rewrite: a user who actually signed in/out
+      // ALWAYS shows their real working status, regardless of any stale
+      // Absent flag in attendance. The previous order put Absent first,
+      // which made John (signed in/out today) still show Absent because
+      // his pre-V4.6 cron row had stamped attendance.status='Absent'.
+      //
+      // New order (top wins):
+      //   1. on-leave      — approved leave
+      //   2. signed-off    — has end_time today
+      //   3. on-break      — break started, no end
+      //   4. working       — has start_time / sign_in_time
+      //   5. on-holiday    — today is Sat/Sun/holiday and none of the above
+      //   6. absent        — only when it IS a working day AND no sign-in
+      //   7. idle          — SSE connection but no sign-in
+      //   8. offline       — no signal at all
       const data = rows.map(r => {
         const s = (r.attendance_status || '').toLowerCase();
         const isOnline = _subscribers.has(r.user_id);
+        const hasSignIn = !!(r.start_time || r.sign_in_time);
         let status = 'offline';
-        if (s === 'absent')       status = 'absent';
-        else if (s === 'leave')   status = 'on-leave';
-        else if (r.end_time)      status = 'signed-off';
-        else if (r.break_start_time && !r.break_end_time) status = 'on-break';
-        else if (r.start_time || r.sign_in_time) status = 'working';
-        else if (isOnline)        status = 'idle';      // signed in to the app but not yet stamped sign-in
+        if (s === 'leave')                                  status = 'on-leave';
+        else if (r.end_time || r.sign_out_time)             status = 'signed-off';
+        else if (r.break_start_time && !r.break_end_time)   status = 'on-break';
+        else if (hasSignIn)                                 status = 'working';
+        else if (nonWorking)                                status = 'on-holiday';
+        else if (s === 'absent')                            status = 'absent';
+        else if (isOnline)                                  status = 'idle';
         return { userId: r.user_id, status, isOnline };
       });
       return { success: true, data };

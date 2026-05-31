@@ -30,6 +30,7 @@ function exposeElectronAPI() {
   // Attendance
   signIn: (userId) => ipcRenderer.invoke('attendance:signIn', { userId }),
   signOut: (userId) => ipcRenderer.invoke('attendance:signOut', { userId }),
+  isTodayNonWorking: () => ipcRenderer.invoke('attendance:isTodayNonWorking'),
   getAttendanceHistory: (userId, startDate, endDate) =>
     ipcRenderer.invoke('attendance:getHistory', { userId, startDate, endDate }),
   getAttendanceByDate: (date, departmentId) => ipcRenderer.invoke('attendance:getByDate', { date, departmentId }),

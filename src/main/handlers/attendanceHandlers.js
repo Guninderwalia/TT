@@ -25,6 +25,21 @@ function mapAttendanceOut(row) {
 }
 
 function register(ipcMain, db) {
+  // v4.7.1 — Tiny helper so dashboards know whether today should be styled
+  // as a Holiday. Returns { isNonWorking: boolean, reason: string|null }.
+  // Reuses the same isNonWorkingDay helper that the cron uses so the two
+  // never disagree on what counts as a non-working day.
+  ipcMain.handle('attendance:isTodayNonWorking', async () => {
+    try {
+      const today = getOfficeDate();
+      const { isNonWorkingDay } = require('../cronJobs');
+      const r = await isNonWorkingDay(db, today);
+      return { success: true, isNonWorking: !!r?.skip, reason: r?.reason || null, today };
+    } catch (e) {
+      return { success: false, isNonWorking: false, reason: null, message: e.message };
+    }
+  });
+
   ipcMain.handle('attendance:signIn', async (event, args = {}) => {
     try {
       // The frontend now passes userId explicitly via window.electron.signIn(user.id).
@@ -58,11 +73,17 @@ function register(ipcMain, db) {
 
       let attendanceId;
       if (existing) {
-        // Row exists (e.g. status was bulk-marked) — just fill in sign-in
+        // Row exists (e.g. status was bulk-marked or auto-cron stamped
+        // Absent earlier in the day). Filling in sign-in proves they DID
+        // show up, so clear any Absent flag and mark them Present — the
+        // dashboards were showing "Absent" for late arrivals which was
+        // clearly wrong.
         attendanceId = existing.id;
         await db.run(
           `UPDATE attendance
-              SET sign_in_time = ?, is_late = ?, late_hours = ?, updated_at = CURRENT_TIMESTAMP
+              SET sign_in_time = ?, is_late = ?, late_hours = ?,
+                  status = CASE WHEN status IN ('Absent','absent') THEN 'Present' ELSE status END,
+                  updated_at = CURRENT_TIMESTAMP
             WHERE id = ?`,
           [now, isLate ? 1 : 0, lateHours, existing.id]
         );

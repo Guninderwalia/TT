@@ -879,6 +879,7 @@ function ChatWidget({ user, onUnreadChange, mode = 'floating' }) {
     'signed-off': '#3b82f6', // blue — done for the day
     absent:     '#ef4444', // red — marked absent
     'on-leave': '#a78bfa', // purple — on leave
+    'on-holiday': '#6366f1', // indigo — weekend / public holiday, didn't sign in
     offline:    '#64748b'  // grey — app closed + no attendance
   };
   const PRESENCE_LABEL = {
@@ -888,6 +889,7 @@ function ChatWidget({ user, onUnreadChange, mode = 'floating' }) {
     'signed-off': 'Signed off',
     absent:     'Absent',
     'on-leave': 'On leave',
+    'on-holiday': 'On holiday',
     offline:    'Offline'
   };
   const PresenceDot = ({ userId, size = 10 }) => {

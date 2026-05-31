@@ -184,6 +184,7 @@ function LeadOverview({ user }) {
   // v4.1: live team status (Working / On Break / Signed Off / Not Started /
   // Absent / On Leave) for each active team member.
   const [teamToday, setTeamToday] = useState([]);
+  const [isNonWorkingToday, setIsNonWorkingToday] = useState(false);
 
   // Allow either snake_case or camelCase on the user object so this works
   // regardless of where the user object was loaded from.
@@ -236,6 +237,15 @@ function LeadOverview({ user }) {
         setSummary7d(Array.isArray(weekSummary?.data) ? weekSummary.data : []);
         setMyTimeLogs(Array.isArray(hoursHistory?.data) ? hoursHistory.data : []);
         setTeamToday(Array.isArray(teamLive?.data) ? teamLive.data : []);
+        // v4.7.1 — show "On Holiday" label on Sat/Sun + public holidays
+        // for team members who didn't sign in. Sign-ins still show real
+        // status so leads can spot anyone who chose to work the weekend.
+        try {
+          if (window.electron.isTodayNonWorking) {
+            const nw = await window.electron.isTodayNonWorking();
+            setIsNonWorkingToday(!!nw?.isNonWorking);
+          }
+        } catch (_) { /* keep default false */ }
       } catch (error) {
         console.error('Failed to load lead dashboard data:', error);
       }
@@ -491,7 +501,7 @@ function LeadOverview({ user }) {
           it's the first thing the lead sees on the home page. */}
       <h3 style={{ marginTop: '24px', marginBottom: '8px', color: 'var(--text)' }}>Live Team Status</h3>
       <div className="charts-grid">
-        <TeamLiveStatusChart teamRows={teamToday} />
+        <TeamLiveStatusChart teamRows={teamToday} isNonWorkingDay={isNonWorkingToday} />
         <div className="chart-card">
           <h3 className="chart-card-title">Who's On Right Now</h3>
           <div className="chart-card-body" style={{ height: 260, overflowY: 'auto', padding: '4px 2px' }}>
@@ -500,7 +510,7 @@ function LeadOverview({ user }) {
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {teamToday.map(row => {
-                  const s = deriveTeamMemberStatus(row);
+                  const s = deriveTeamMemberStatus(row, isNonWorkingToday);
                   return (
                     <div key={row.userId} style={{
                       display: 'flex', alignItems: 'center', gap: 10,

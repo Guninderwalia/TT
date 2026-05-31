@@ -156,6 +156,7 @@
     // session instead of returning "userId required".
     signIn: (userId) => invoke('attendance:signIn', { userId: userId || cachedUserId() }),
     signOut: (userId) => invoke('attendance:signOut', { userId: userId || cachedUserId() }),
+    isTodayNonWorking: () => invoke('attendance:isTodayNonWorking'),
     getAttendanceHistory: (userId, startDate, endDate) =>
       invoke('attendance:getHistory', { userId, startDate, endDate }),
     getAttendanceByDate: (date, departmentId) =>
