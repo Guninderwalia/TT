@@ -424,17 +424,46 @@
 <h3>Understanding the presence dots</h3>
 <p>Next to every name (and on every avatar) you'll see a small coloured dot indicating what that person is doing right now:</p>
 <table>
-  <thead><tr><th>Dot</th><th>Means</th><th>Best time to message?</th></tr></thead>
+  <thead><tr><th>Dot</th><th>Status</th><th>What it actually means</th><th>Best time to message?</th></tr></thead>
   <tbody>
-    <tr><td><span class="dot dot-working"></span> Green</td><td>Signed in and actively working</td><td>Yes — they're at their desk</td></tr>
-    <tr><td><span class="dot dot-break"></span> Amber</td><td>On a break</td><td>Yes, but expect a slight delay</td></tr>
-    <tr><td><span class="dot dot-idle"></span> Yellow</td><td>Signed in but inactive for &gt; 10 min</td><td>Send a message; they'll see it when back</td></tr>
-    <tr><td><span class="dot dot-off"></span> Blue</td><td>Signed out for the day</td><td>They'll see it tomorrow</td></tr>
-    <tr><td><span class="dot dot-absent"></span> Red</td><td>Marked absent today</td><td>Not at work — try email</td></tr>
-    <tr><td><span class="dot dot-leave"></span> Purple</td><td>On approved leave</td><td>Don't disturb unless urgent</td></tr>
-    <tr><td><span class="dot dot-offline"></span> Grey</td><td>Hasn't been seen in a while</td><td>Status unknown</td></tr>
+    <tr><td><span class="dot dot-working"></span></td><td><strong>Working</strong></td><td>Signed in today AND not currently on a break</td><td>Yes — they're at their desk</td></tr>
+    <tr><td><span class="dot dot-break"></span></td><td><strong>On break</strong></td><td>Pressed Start Break, haven't pressed End Break</td><td>Yes, but expect a slight delay</td></tr>
+    <tr><td><span class="dot dot-idle"></span></td><td><strong>Online</strong></td><td>App is open with an active connection, but they haven't signed in for the day yet</td><td>Send a quick "morning" — they're at the keyboard</td></tr>
+    <tr><td><span class="dot dot-off"></span></td><td><strong>Signed off</strong></td><td>They pressed Sign Out — done for the day</td><td>They'll see it tomorrow</td></tr>
+    <tr><td><span class="dot dot-absent"></span></td><td><strong>Absent</strong></td><td>Today's attendance row is set to Absent (by admin or by the auto-cron)</td><td>Not at work — try email or phone</td></tr>
+    <tr><td><span class="dot dot-leave"></span></td><td><strong>On leave</strong></td><td>An approved leave covers today</td><td>Don't disturb unless urgent</td></tr>
+    <tr><td><span class="dot dot-offline"></span></td><td><strong>Offline</strong></td><td>No app connection, no sign-in, no leave</td><td>Status unknown — try later</td></tr>
   </tbody>
 </table>
+
+<h3>How the dot decides (priority order)</h3>
+<p>
+  Each person can only have one dot at a time. The system checks these
+  conditions <strong>top-down</strong> and uses the <em>first match</em> —
+  so if a person is on approved leave but happens to log in from holiday,
+  they still show <span class="dot dot-leave"></span> <strong>On leave</strong>, not <span class="dot dot-working"></span> Working.
+</p>
+<ol class="steps">
+  <li>Attendance row says <strong>Absent</strong> → 🔴 Absent (overrides everything below)</li>
+  <li>Attendance row says <strong>Leave</strong> → 🟣 On leave</li>
+  <li>Time log has a <strong>sign-out</strong> → 🔵 Signed off</li>
+  <li>Break started but not ended → 🟡 On break</li>
+  <li>Has a sign-in time today → 🟢 Working</li>
+  <li>App connection alive but none of the above → 🟨 Online (yellow)</li>
+  <li>None of the above → ⚪ Offline</li>
+</ol>
+
+<div class="tip">
+  The dot refreshes <strong>every 30 seconds</strong> while chat is open (and immediately when you open a new conversation). So someone signing out will switch from 🟢 to 🔵 within half a minute — not instantly.
+</div>
+
+<div class="example">
+  Asha is on approved leave today but opens the app from the beach to check messages. Her dot stays <span class="dot dot-leave"></span> <strong>On leave</strong> (not 🟨 Online) because the leave status wins the priority order. Anyone seeing her dot knows not to push work onto her.
+</div>
+
+<div class="warn">
+  If a dot doesn't appear at all (no colour visible), the system hasn't loaded that person's presence yet — wait a couple of seconds for the next refresh. Showing grey before we know would be misleading, so the system shows nothing until it's confident.
+</div>
 
 <h3>Sending a message</h3>
 <ol class="steps">

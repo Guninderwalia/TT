@@ -424,10 +424,58 @@
 <p>You use chat the same way every other user does. Admin-specific notes:</p>
 <ul>
   <li>You see <em>everyone</em> in the contacts list, not just your department.</li>
-  <li>The presence dots in chat are computed live from the same data the dashboards use.</li>
-  <li>You can call any user 1:1 (audio / video). Group calls are not in v4.5.</li>
-  <li>Chat attachments are stored in the database; large files (&gt;5 MB) bloat backups — set a sensible policy with your team.</li>
+  <li>You can broadcast — pick <strong>Everyone</strong>, <strong>By Department</strong>, <strong>By Role</strong>, or individual people (Chat panel → <strong>📣 Broadcast</strong>).</li>
+  <li>You can call any user 1:1 (audio / video). Group calls are not in v4.6.</li>
+  <li>Chat attachments are stored on disk under <code>chat-attachments/</code>; large files (&gt;5 MB) bloat backups — set a sensible policy with your team.</li>
 </ul>
+
+<h3>Presence dots — what each colour really means</h3>
+<p>
+  The presence dots in chat are computed live from three sources for every visible user:
+</p>
+<ul>
+  <li><strong>attendance</strong> table — today's row (Absent / Leave / Present)</li>
+  <li><strong>time_logs</strong> table — today's row (start_time, break_start_time, break_end_time, end_time)</li>
+  <li><strong>SSE subscriber map</strong> — in-memory list of clients currently connected to the live event stream</li>
+</ul>
+
+<table>
+  <thead><tr><th>Dot</th><th>Hex</th><th>Status</th><th>Source condition</th></tr></thead>
+  <tbody>
+    <tr><td><span class="pill" style="background:#10b981;color:white">●</span></td><td><code>#10b981</code></td><td><strong>Working</strong></td><td>time_logs.start_time set, no active break, no sign-out</td></tr>
+    <tr><td><span class="pill" style="background:#f59e0b;color:white">●</span></td><td><code>#f59e0b</code></td><td><strong>On break</strong></td><td>break_start_time set, break_end_time NULL</td></tr>
+    <tr><td><span class="pill" style="background:#facc15;color:#78350f">●</span></td><td><code>#facc15</code></td><td><strong>Online</strong></td><td>SSE connection alive but no sign-in yet today</td></tr>
+    <tr><td><span class="pill" style="background:#3b82f6;color:white">●</span></td><td><code>#3b82f6</code></td><td><strong>Signed off</strong></td><td>time_logs.end_time set (manual sign-out or 23:00 cron)</td></tr>
+    <tr><td><span class="pill" style="background:#ef4444;color:white">●</span></td><td><code>#ef4444</code></td><td><strong>Absent</strong></td><td>attendance.status = 'Absent'</td></tr>
+    <tr><td><span class="pill" style="background:#a78bfa;color:white">●</span></td><td><code>#a78bfa</code></td><td><strong>On leave</strong></td><td>attendance.status = 'Leave'</td></tr>
+    <tr><td><span class="pill" style="background:#64748b;color:white">●</span></td><td><code>#64748b</code></td><td><strong>Offline</strong></td><td>No SSE, no sign-in, no leave</td></tr>
+  </tbody>
+</table>
+
+<h4>Priority order (top-down — first match wins)</h4>
+<ol class="steps">
+  <li>attendance = Absent → 🔴 Absent</li>
+  <li>attendance = Leave  → 🟣 On leave</li>
+  <li>time_logs.end_time set → 🔵 Signed off</li>
+  <li>Break started but not ended → 🟡 On break</li>
+  <li>Has sign-in time today → 🟢 Working</li>
+  <li>SSE alive only → 🟨 Online</li>
+  <li>Otherwise → ⚪ Offline</li>
+</ol>
+
+<div class="tip">
+  <strong>Refresh cadence:</strong> the chat client polls <code>chat:getPresence</code> every 30 seconds while the panel is open, and on demand when the user opens a new conversation or contact list changes. The Lead/Admin dashboard presence widgets use the same handler.
+</div>
+
+<div class="warn">
+  <strong>Common gotchas you'll be asked about:</strong>
+  <ul>
+    <li><strong>"Why is X still red on a Sunday?"</strong> — that's a leftover attendance row from before the V4.6 cron fix. Open their attendance history and delete the row.</li>
+    <li><strong>"Why does X show On leave even though they're chatting?"</strong> — leave wins the priority order. The data is correct.</li>
+    <li><strong>"Why is X showing no dot at all?"</strong> — their presence record isn't loaded yet. The system deliberately shows nothing rather than misleading grey until it has data.</li>
+    <li><strong>"Why is the cron still marking people absent during a national holiday?"</strong> — make sure the date is in the <code>public_holidays</code> table (Settings → Holidays). The V4.6 cron checks this table.</li>
+  </ul>
+</div>
 
 <h2 id="cron">15. Background cron jobs</h2>
 <p>TaskTango runs an internal scheduler that triggers <strong>once an hour</strong>. Three jobs run inside it:</p>

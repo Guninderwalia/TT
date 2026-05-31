@@ -189,18 +189,50 @@
 <table>
   <thead><tr><th>Colour</th><th>Status</th><th>What that actually means</th><th>What to do</th></tr></thead>
   <tbody>
-    <tr><td><span class="pill pill-green">●</span></td><td>Working</td><td>Signed in, no active break, last action &lt; 10 min ago</td><td>Available to message or call</td></tr>
+    <tr><td><span class="pill pill-green">●</span></td><td>Working</td><td>Signed in today AND not currently on a break</td><td>Available to message or call</td></tr>
     <tr><td><span class="pill pill-amber">●</span></td><td>On Break</td><td>Pressed Start Break, hasn't pressed End Break</td><td>Wait or message — they'll be back</td></tr>
-    <tr><td>🟡</td><td>Idle</td><td>Signed in but no activity for 10+ min</td><td>Maybe AFK or in a meeting</td></tr>
+    <tr><td>🟡</td><td>Online</td><td>App is open with an active connection but no sign-in yet today</td><td>Quick check-in: "Morning — about to start?"</td></tr>
     <tr><td><span class="pill pill-blue">●</span></td><td>Signed off</td><td>Pressed Sign Out for the day</td><td>Available tomorrow</td></tr>
-    <tr><td><span class="pill pill-red">●</span></td><td>Absent</td><td>Auto-marked because they didn't sign in within 30 min of start</td><td>Check in via chat / phone</td></tr>
+    <tr><td><span class="pill pill-red">●</span></td><td>Absent</td><td>Today's attendance row is set to Absent (admin or cron)</td><td>Check in via chat / phone</td></tr>
     <tr><td><span class="pill pill-purple">●</span></td><td>On Leave</td><td>Approved leave covers today</td><td>Don't disturb unless emergency</td></tr>
-    <tr><td><span class="pill pill-grey">●</span></td><td>Offline</td><td>No recent activity, no leave, no sign-in</td><td>Status unknown</td></tr>
+    <tr><td><span class="pill pill-grey">●</span></td><td>Offline</td><td>No app connection, no sign-in, no leave</td><td>Status unknown</td></tr>
   </tbody>
 </table>
 
+<h4>Priority order (the dot is decided top-down — first match wins)</h4>
+<ol class="steps">
+  <li>Attendance = <strong>Absent</strong> → 🔴 Absent (overrides everything below)</li>
+  <li>Attendance = <strong>Leave</strong> → 🟣 On leave</li>
+  <li>Time log has a <strong>sign-out</strong> → 🔵 Signed off</li>
+  <li>Break started but not ended → 🟡 On break (amber)</li>
+  <li>Has a sign-in time today → 🟢 Working</li>
+  <li>App connection alive but none of the above → 🟨 Online (yellow)</li>
+  <li>None of the above → ⚪ Offline</li>
+</ol>
+
+<div class="tip">
+  This priority order is why a team member <em>on approved leave</em> who briefly opens the app shows 🟣 On leave, not 🟨 Online. Leave wins over connection state — useful when leads scan the donut and don't want to be misled into pinging someone who's at the beach.
+</div>
+
+<h4>Refresh cadence</h4>
+<p>
+  The dots refresh every <strong>30 seconds</strong> while you're on a page that shows them. They also refresh immediately when:
+</p>
+<ul>
+  <li>You open or switch a chat conversation</li>
+  <li>A new contact appears in the list</li>
+  <li>You enter or leave a call</li>
+</ul>
+<p>
+  So when someone signs out, you'll see the dot flip from 🟢 to 🔵 within half a minute — not instantly. The Lead Dashboard charts use the same data and refresh at the same cadence.
+</p>
+
 <div class="example">
   Ravi opens the Lead Dashboard at 09:45. The donut shows 6 Working, 1 On Break, 2 Absent. He scans the list — Asha and Vikram are red. He opens chat, sees Asha's last message was at 22:00 last night, sends "Morning — everything OK?" Vikram replies in 5 mins: "Sorry boss, train delay, I'll be in by 10:30." Crisis avoided.
+</div>
+
+<div class="warn">
+  <strong>Cron interaction (V4.6 fix):</strong> the auto-mark-absent cron no longer runs on weekends or public holidays. If a team member shows 🔴 Absent on a Sunday it's left over from before the V4.6 patch — admin can delete that row from their attendance history.
 </div>
 
 <h2 id="timelog">4. Team time logs — viewing &amp; sanity-checking</h2>
