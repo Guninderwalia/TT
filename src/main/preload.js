@@ -87,6 +87,8 @@ function exposeElectronAPI() {
   getSetting:          (key) => ipcRenderer.invoke('settings:get', { key }),
   setSetting:          (key, value) => ipcRenderer.invoke('settings:set', { key, value }),
   downloadDbBackup:    () => ipcRenderer.invoke('settings:downloadBackup'),
+  // v4.5 — admin nuke: wipes employee-generated data, keeps admins + lookups.
+  wipeTestData:        (confirm) => ipcRenderer.invoke('admin:wipeTestData', { confirm }),
   getDepartmentLeaveRequests: (departmentId, leadId) =>
     ipcRenderer.invoke('leave:getDepartmentRequests', { departmentId, leadId }),
   getAssignedLeaveRequests: (approverId) =>
@@ -140,6 +142,7 @@ function exposeElectronAPI() {
   chatStartConversation: (userId, otherUserId)           => ipcRenderer.invoke('chat:startConversation', { userId, otherUserId }),
   chatGetMessages:       (userId, conversationId, since) => ipcRenderer.invoke('chat:getMessages', { userId, conversationId, since }),
   chatSendMessage:       (userId, conversationId, content, attachment) => ipcRenderer.invoke('chat:sendMessage', { userId, conversationId, content, attachment }),
+  chatGetPresence:       (userIds) => ipcRenderer.invoke('chat:getPresence', { userIds }),
   chatReadAttachment:    (attachmentPath) => ipcRenderer.invoke('chat:readAttachment', attachmentPath),
   chatOpenAttachment:    (attachmentPath) => ipcRenderer.invoke('chat:openAttachment', attachmentPath),
   // v4.0 voice/video call signalling — relays SDP / ICE between two

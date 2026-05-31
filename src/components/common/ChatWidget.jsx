@@ -38,6 +38,8 @@ function ChatWidget({ user, onUnreadChange, mode = 'floating' }) {
   const [unread, setUnread] = useState(0);
   const [search, setSearch] = useState('');
   const [emojiOpen, setEmojiOpen] = useState(false);
+  // v4.5 — Presence map keyed by userId: { status: 'working'|'on-break'|...|'offline', isOnline: bool }
+  const [presence, setPresence] = useState({});
   // Pending attachment selected from disk but not yet sent.
   // Shape: { name, size, mime, base64 } where base64 is the file body without
   // the "data:...;base64," prefix.
@@ -60,6 +62,9 @@ function ChatWidget({ user, onUnreadChange, mode = 'floating' }) {
   const [callCameraOff, setCallCameraOff] = useState(false);
   // Whether the active call was started as audio-only (no local video sent).
   const [callIsVideo, setCallIsVideo] = useState(true);
+  // v4.5 — Minimised call: shrinks the in-call view to a small floating
+  // window so the user can interact with the rest of the app during a call.
+  const [callMinimized, setCallMinimized] = useState(false);
   // Stream refs (the React-render <video> elements just point at these).
   const peerConnectionRef = useRef(null);
   const localStreamRef = useRef(null);
@@ -647,6 +652,40 @@ function ChatWidget({ user, onUnreadChange, mode = 'floating' }) {
     } catch (_) { /* ignore */ }
   };
 
+  // v4.5 — Presence polling. Refresh every 30s for everyone currently
+  // visible (conversation peers + contacts + active thread). The dot
+  // shown next to each avatar reads from this map. Refreshes also fire
+  // on every SSE message:new event (the existing handler triggers a
+  // conversation refresh) — adding presence in the same window keeps
+  // dots fresh without extra round-trips.
+  useEffect(() => {
+    if (!myId) return;
+    const tick = async () => {
+      try {
+        const ids = new Set();
+        for (const c of conversations) {
+          if (c?.other?.id) ids.add(c.other.id);
+        }
+        for (const c of contacts) {
+          if (c?.id) ids.add(c.id);
+        }
+        if (activeConv?.other?.id) ids.add(activeConv.other.id);
+        if (callPeer?.id) ids.add(callPeer.id);
+        const list = Array.from(ids);
+        if (list.length === 0) return;
+        const r = await window.electron.chatGetPresence(list);
+        if (r?.success && Array.isArray(r.data)) {
+          const next = {};
+          for (const row of r.data) next[row.userId] = row;
+          setPresence(next);
+        }
+      } catch (_) { /* ignore — presence is best-effort */ }
+    };
+    tick();
+    const t = setInterval(tick, 30000);
+    return () => clearInterval(t);
+  }, [myId, conversations, contacts, activeConv?.other?.id, callPeer?.id]);
+
   // Initial load + periodic safety-net poll for unread (handles SSE reconnect gaps)
   useEffect(() => {
     if (!myId) return;
@@ -828,16 +867,61 @@ function ChatWidget({ user, onUnreadChange, mode = 'floating' }) {
            d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
-  const Avatar = ({ src, name, size = 36 }) => (
+  // v4.5 — small presence dot positioned bottom-right of the wrapper.
+  // Colours match the team-status palette in DashboardCharts.
+  const PRESENCE_COLORS = {
+    working:    '#10b981', // green — signed in, working
+    'on-break': '#f59e0b', // amber — break in progress
+    idle:       '#facc15', // yellow — app open, not yet stamped sign-in
+    'signed-off': '#3b82f6', // blue — done for the day
+    absent:     '#ef4444', // red — marked absent
+    'on-leave': '#a78bfa', // purple — on leave
+    offline:    '#64748b'  // grey — app closed + no attendance
+  };
+  const PRESENCE_LABEL = {
+    working:    'Working',
+    'on-break': 'On break',
+    idle:       'Online',
+    'signed-off': 'Signed off',
+    absent:     'Absent',
+    'on-leave': 'On leave',
+    offline:    'Offline'
+  };
+  const PresenceDot = ({ userId, size = 10 }) => {
+    if (!userId) return null;
+    const p = presence[userId];
+    if (!p) return null; // unknown — render nothing rather than misleading grey
+    const color = PRESENCE_COLORS[p.status] || PRESENCE_COLORS.offline;
+    return (
+      <span
+        title={PRESENCE_LABEL[p.status] || p.status}
+        style={{
+          position: 'absolute', bottom: -1, right: -1,
+          width: size, height: size, borderRadius: '50%',
+          background: color, border: '2px solid var(--bg-2, #1f2937)',
+          pointerEvents: 'none'
+        }}
+      />
+    );
+  };
+
+  const Avatar = ({ src, name, size = 36, userId = null }) => (
     <div style={{
-      width: size, height: size, borderRadius: '50%',
-      background: '#f59e0b', color: '#fff',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontWeight: 700, fontSize: size * 0.4, overflow: 'hidden', flexShrink: 0
+      position: 'relative', flexShrink: 0,
+      width: size, height: size
     }}>
-      {src
-        ? <img src={src} alt={name || '?'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-        : (name || '?').charAt(0).toUpperCase()}
+      <div style={{
+        width: size, height: size, borderRadius: '50%',
+        background: '#f59e0b', color: '#fff',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontWeight: 700, fontSize: size * 0.4, overflow: 'hidden'
+      }}>
+        {src
+          ? <img src={src} alt={name || '?'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          : (name || '?').charAt(0).toUpperCase()}
+      </div>
+      {/* v4.5 — presence dot overlay; auto-sizes with the avatar. */}
+      <PresenceDot userId={userId} size={Math.max(8, Math.round(size * 0.28))} />
     </div>
   );
 
@@ -1088,7 +1172,7 @@ function ChatWidget({ user, onUnreadChange, mode = 'floating' }) {
                           ? 'rgba(59,130,246,0.12)' : 'transparent'
                       }}
                     >
-                      <Avatar src={conv.other?.profilePicturePath} name={conv.other?.fullName} />
+                      <Avatar src={conv.other?.profilePicturePath} name={conv.other?.fullName} userId={conv.other?.id} />
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{
                           display: 'flex', justifyContent: 'space-between', alignItems: 'center'
@@ -1128,7 +1212,7 @@ function ChatWidget({ user, onUnreadChange, mode = 'floating' }) {
                         cursor: 'pointer'
                       }}
                     >
-                      <Avatar src={c.profilePicturePath} name={c.fullName} />
+                      <Avatar src={c.profilePicturePath} name={c.fullName} userId={c.id} />
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontWeight: 600, fontSize: '13px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {c.fullName}
@@ -1160,7 +1244,7 @@ function ChatWidget({ user, onUnreadChange, mode = 'floating' }) {
                     borderBottom: '1px solid rgba(255,255,255,0.06)',
                     display: 'flex', gap: '10px', alignItems: 'center'
                   }}>
-                    <Avatar src={activeConv.other?.profilePicturePath} name={activeConv.other?.fullName} size={32} />
+                    <Avatar src={activeConv.other?.profilePicturePath} name={activeConv.other?.fullName} size={32} userId={activeConv.other?.id} />
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontWeight: 600, fontSize: '14px' }}>{activeConv.other?.fullName}</div>
                       <div style={{ fontSize: '11px', color: 'var(--text-2, #94a3b8)' }}>
@@ -1428,7 +1512,7 @@ function ChatWidget({ user, onUnreadChange, mode = 'floating' }) {
             boxShadow: '0 24px 60px rgba(0,0,0,0.55)',
             border: '1px solid rgba(255,255,255,0.08)'
           }}>
-            <Avatar src={callPeer.picture} name={callPeer.name} size={84} />
+            <Avatar src={callPeer.picture} name={callPeer.name} size={84} userId={callPeer.id} />
             <div style={{ fontSize: '18px', fontWeight: 700, marginTop: '14px' }}>
               {callPeer.name}
             </div>
@@ -1476,9 +1560,20 @@ function ChatWidget({ user, onUnreadChange, mode = 'floating' }) {
           </div>
         </div>
       ) : (
-        // In-call window — remote video full, local PiP in the corner.
+        // In-call window — full-screen when expanded, small floating window
+        // in the corner when minimized (v4.5). The same <video> refs feed
+        // both layouts so the live stream doesn't blink during transitions.
         <div
-          style={{
+          style={callMinimized ? {
+            position: 'fixed',
+            bottom: 16, right: 16,
+            width: 320, height: 220,
+            background: '#000', borderRadius: 12,
+            display: 'flex', flexDirection: 'column',
+            zIndex: 10000, overflow: 'hidden',
+            boxShadow: '0 12px 32px rgba(0,0,0,0.6)',
+            border: '1px solid rgba(255,255,255,0.15)'
+          } : {
             position: 'fixed', inset: 0,
             background: '#000',
             display: 'flex', flexDirection: 'column',
@@ -1500,7 +1595,7 @@ function ChatWidget({ user, onUnreadChange, mode = 'floating' }) {
                 flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
                 color: '#fff', textAlign: 'center'
               }}>
-                <Avatar src={callPeer.picture} name={callPeer.name} size={120} />
+                <Avatar src={callPeer.picture} name={callPeer.name} size={120} userId={callPeer.id} />
                 <div style={{ marginTop: '16px', fontSize: '20px', fontWeight: 600 }}>{callPeer.name}</div>
                 <div style={{ opacity: 0.7, marginTop: '4px' }}>Audio call</div>
               </div>
@@ -1512,14 +1607,16 @@ function ChatWidget({ user, onUnreadChange, mode = 'floating' }) {
               padding: '6px 12px', borderRadius: '8px',
               fontSize: '13px', display: 'flex', alignItems: 'center', gap: '8px'
             }}>
-              <Avatar src={callPeer.picture} name={callPeer.name} size={22} />
+              <Avatar src={callPeer.picture} name={callPeer.name} size={22} userId={callPeer.id} />
               <span style={{ fontWeight: 600 }}>{callPeer.name}</span>
               <span style={{ opacity: 0.65, fontSize: '11px' }}>
                 {callState === 'connecting' ? '· connecting' : '· connected'}
               </span>
             </div>
-            {/* Local picture-in-picture (video calls only). */}
-            {callIsVideo && (
+            {/* Local picture-in-picture (video calls only). Hidden when
+                the call window is minimized — there's not enough room for
+                a meaningful preview. */}
+            {callIsVideo && !callMinimized && (
               <video
                 ref={localVideoRef}
                 autoPlay
@@ -1537,47 +1634,45 @@ function ChatWidget({ user, onUnreadChange, mode = 'floating' }) {
             )}
           </div>
 
-          {/* Control bar */}
+          {/* Control bar — compact when minimized to fit the 320×220 PiP. */}
           <div style={{
             background: 'rgba(0,0,0,0.85)',
-            padding: '14px',
-            display: 'flex', gap: '14px', justifyContent: 'center',
+            padding: callMinimized ? '6px' : '14px',
+            display: 'flex', gap: callMinimized ? '6px' : '14px', justifyContent: 'center',
             borderTop: '1px solid rgba(255,255,255,0.08)'
           }}>
-            <button
-              type="button"
-              onClick={toggleMute}
-              title={callMuted ? 'Unmute' : 'Mute'}
-              style={{
-                background: callMuted ? '#ef4444' : 'rgba(255,255,255,0.12)',
-                color: '#fff', border: 0,
-                width: '52px', height: '52px', borderRadius: '50%',
-                fontSize: '20px', cursor: 'pointer'
-              }}
-            >{callMuted ? '🔇' : '🎙️'}</button>
-            {callIsVideo && (
-              <button
-                type="button"
-                onClick={toggleCamera}
-                title={callCameraOff ? 'Turn camera on' : 'Turn camera off'}
-                style={{
-                  background: callCameraOff ? '#ef4444' : 'rgba(255,255,255,0.12)',
-                  color: '#fff', border: 0,
-                  width: '52px', height: '52px', borderRadius: '50%',
-                  fontSize: '20px', cursor: 'pointer'
-                }}
-              >{callCameraOff ? '🚫' : '📹'}</button>
-            )}
-            <button
-              type="button"
-              onClick={endCall}
-              title="End call"
-              style={{
-                background: '#ef4444', color: '#fff', border: 0,
-                width: '52px', height: '52px', borderRadius: '50%',
-                fontSize: '20px', cursor: 'pointer'
-              }}
-            >📞</button>
+            {(() => {
+              const sz = callMinimized ? 32 : 52;
+              const fs = callMinimized ? 14 : 20;
+              const btnStyle = (bg) => ({
+                background: bg, color: '#fff', border: 0,
+                width: sz, height: sz, borderRadius: '50%',
+                fontSize: fs, cursor: 'pointer'
+              });
+              return (
+                <>
+                  <button type="button" onClick={toggleMute} title={callMuted ? 'Unmute' : 'Mute'}
+                    style={btnStyle(callMuted ? '#ef4444' : 'rgba(255,255,255,0.12)')}>
+                    {callMuted ? '🔇' : '🎙️'}
+                  </button>
+                  {callIsVideo && (
+                    <button type="button" onClick={toggleCamera} title={callCameraOff ? 'Turn camera on' : 'Turn camera off'}
+                      style={btnStyle(callCameraOff ? '#ef4444' : 'rgba(255,255,255,0.12)')}>
+                      {callCameraOff ? '🚫' : '📹'}
+                    </button>
+                  )}
+                  {/* v4.5 — Minimize / expand button. Lets the user keep the
+                      call up while doing other things in the app. */}
+                  <button type="button" onClick={() => setCallMinimized(v => !v)}
+                    title={callMinimized ? 'Expand call' : 'Minimize call'}
+                    style={btnStyle('rgba(255,255,255,0.12)')}>
+                    {callMinimized ? '⛶' : '➖'}
+                  </button>
+                  <button type="button" onClick={endCall} title="End call"
+                    style={btnStyle('#ef4444')}>📞</button>
+                </>
+              );
+            })()}
           </div>
         </div>
       ))}

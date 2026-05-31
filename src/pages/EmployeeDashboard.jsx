@@ -7,9 +7,11 @@ import LeaveCalendar from '../components/employee/LeaveCalendar';
 import TimeLogging from '../components/employee/TimeLogging';
 import EmployeePerformanceReview from '../components/employee/EmployeePerformanceReview';
 import EmployeeDocuments from '../components/common/EmployeeDocuments';
+import OrgChart from '../components/common/OrgChart';
 import ChatWidget from '../components/common/ChatWidget';
 import logoImage from '../assets/logo.png';
 import NotificationBell from '../components/common/NotificationBell';
+import QuickSignInChip from '../components/common/QuickSignInChip';
 import '../styles/dashboard.css';
 
 function EmployeeDashboard({ user, onLogout }) {
@@ -52,6 +54,7 @@ function EmployeeDashboard({ user, onLogout }) {
     { id: 'leave', label: 'Leave Requests', icon: 'calendar-check', path: '/leave' },
     { id: 'performance', label: 'My Performance', icon: 'trending-up', path: '/performance' },
     { id: 'documents', label: 'My Documents', icon: 'file', path: '/documents' },
+    { id: 'org-chart', label: 'Org Chart', icon: 'sitemap', path: '/org-chart' },
   ];
 
   return (
@@ -73,6 +76,7 @@ function EmployeeDashboard({ user, onLogout }) {
             <h1>My Dashboard</h1>
             <p className="welcome-text">Welcome, {user.fullName}</p>
           </div>
+          <QuickSignInChip user={user} />
           <ChatWidget user={user} mode="header" />
           <NotificationBell user={user} />
           <div style={{
@@ -109,6 +113,7 @@ function EmployeeDashboard({ user, onLogout }) {
             <Route path="/attendance/*" element={<AttendanceLogger user={user} />} />
             <Route path="/leave/*" element={<LeaveCalendar user={user} />} />
             <Route path="/performance/*" element={<EmployeePerformanceReview user={user} />} />
+            <Route path="/org-chart/*" element={<OrgChart />} />
             <Route path="/documents/*" element={
               <div className="manager-container">
                 <div className="manager-header">

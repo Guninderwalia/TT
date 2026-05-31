@@ -12,7 +12,7 @@ const { patchIpcMain, startServer: startWebServer } = require('./webServer');
 //   Review Scoring Guide is always present (everyone needs it).
 // ============================================================================
 const PRODUCT_NAME      = 'TaskTango';
-const PRODUCT_VERSION   = 'Production v4.3';
+const PRODUCT_VERSION   = 'Production v4.5';
 const PRODUCT_DEVELOPER = 'Guninder Ahluwalia';
 
 // Tracked across the session so the menu can show the right guide for the
@@ -525,6 +525,14 @@ app.on('ready', async () => {
     }, 60 * 60 * 1000);
   } catch (e) {
     console.warn('[TIME] Time-sync utility unavailable:', e.message);
+  }
+
+  // v4.5 — Hourly background jobs (auto-mark absent / probation flip /
+  // auto-sign-out). Same scheduler runs in server mode too.
+  try {
+    if (db) require('./cronJobs').start(db);
+  } catch (e) {
+    console.warn('[CRON] scheduler unavailable:', e.message);
   }
 
   createWindow();

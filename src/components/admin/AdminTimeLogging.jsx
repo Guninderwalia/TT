@@ -111,6 +111,7 @@ function AdminTimeLogging() {
           */}
           <TimeLogging
             key={selectedEmployeeObj.id || selectedEmployeeObj.empId}
+            canEdit={true}
             user={{
               id: selectedEmployeeObj.id || selectedEmployeeObj.empId,
               fullName:

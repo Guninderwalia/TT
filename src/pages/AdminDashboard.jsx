@@ -14,8 +14,10 @@ import AdminLeaveApprovals from '../components/admin/AdminLeaveApprovals';
 import ChatWidget from '../components/common/ChatWidget';
 import logoImage from '../assets/logo.png';
 import NotificationBell from '../components/common/NotificationBell';
+import QuickSignInChip from '../components/common/QuickSignInChip';
 import SettingsPage from '../components/admin/SettingsPage';
 import CelebrationsWidget from '../components/common/CelebrationsWidget';
+import OrgChart from '../components/common/OrgChart';
 import {
   HeadcountChart,
   AttendanceTodayChart,
@@ -75,6 +77,7 @@ function AdminDashboard({ user, onLogout }) {
     { id: 'payroll', label: 'Payroll', icon: 'dollar-sign', path: '/payroll' },
     { id: 'deposits', label: 'Security Deposits', icon: 'lock', path: '/deposits' },
     { id: 'audit', label: 'Audit Logs', icon: 'shield', path: '/audit' },
+    { id: 'org-chart', label: 'Org Chart', icon: 'sitemap', path: '/org-chart' },
     { id: 'settings', label: 'Settings', icon: 'settings', path: '/settings' },
   ];
 
@@ -97,6 +100,7 @@ function AdminDashboard({ user, onLogout }) {
             <h1>{user.role_name === 'MD' ? 'Managing Director Dashboard' : 'Administrator Dashboard'}</h1>
             <p className="welcome-text">Welcome back, {user.fullName}</p>
           </div>
+          <QuickSignInChip user={user} />
           <ChatWidget user={user} mode="header" />
           <NotificationBell user={user} />
           {/* Bigger header avatar — shows uploaded picture, falls back to initial */}
@@ -139,6 +143,7 @@ function AdminDashboard({ user, onLogout }) {
             <Route path="/payroll/*" element={<PayrollManager />} />
             <Route path="/deposits/*" element={<DepositDashboard user={user} />} />
             <Route path="/audit/*" element={<AuditDashboard />} />
+            <Route path="/org-chart/*" element={<OrgChart />} />
             <Route path="/settings/*" element={<SettingsPage user={user} />} />
           </Routes>
         </div>
@@ -368,7 +373,24 @@ function AdminOverview({ user }) {
       <CelebrationsWidget />
 
       {/* Upcoming Leaves — company-wide so admins can plan around absences */}
-      <h3 style={{ marginTop: '24px', marginBottom: '8px', color: 'var(--text)' }}>Upcoming Leaves (Company-wide)</h3>
+      <div style={{ marginTop: '24px', marginBottom: '8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+        <h3 style={{ margin: 0, color: 'var(--text)' }}>Upcoming Leaves (Company-wide)</h3>
+        {upcomingLeaves.length > 0 && (
+          <button
+            type="button"
+            onClick={async () => {
+              const { buildIcsCalendar, downloadIcs } = await import('../utils/icsExport');
+              downloadIcs(
+                buildIcsCalendar(upcomingLeaves, { calendarName: 'TaskTango — Company Leaves' }),
+                'tasktango-company-leaves.ics'
+              );
+            }}
+            className="btn btn-secondary"
+            style={{ padding: '6px 12px', fontSize: 12 }}
+            title="Download as .ics for Outlook / Google Calendar / Apple Calendar"
+          >📅 Export to Calendar</button>
+        )}
+      </div>
       <div className="form-section" style={{ marginTop: '8px' }}>
         {upcomingLeaves.length === 0 ? (
           <p style={{ color: 'var(--text-2)', margin: 0 }}>No upcoming approved leaves.</p>

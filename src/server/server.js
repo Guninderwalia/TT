@@ -251,6 +251,15 @@ async function applyTimezone(db) {
 
   await applyTimezone(db);
 
+  // v4.5 — Hourly background jobs: auto-mark absent, probation auto-flip,
+  // auto-sign-out at end of office day. Runs once immediately on startup
+  // to catch up after a redeploy.
+  try {
+    require('../main/cronJobs').start(db);
+  } catch (e) {
+    console.warn('[CRON] scheduler unavailable:', e.message);
+  }
+
   const port = Number(process.env.PORT) || 3002;
   try {
     await startServer(port);

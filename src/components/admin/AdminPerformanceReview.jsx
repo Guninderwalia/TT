@@ -334,9 +334,29 @@ function AdminPerformanceReview({ user }) {
         rating: s.rating
       }));
       const review = managerReviews[emp.id] || null;
+
+      // v4.5: look up the employee's department lead so the PDF can name
+      // them on the Team Lead row + the "Reviewed by" signature. Falls
+      // back to the logged-in reviewer's name if no lead is assigned.
+      let leadName = null;
+      try {
+        const emp_dept_id = emp.departmentId ?? emp.department_id;
+        if (emp_dept_id) {
+          const dept = (departments || []).find(d =>
+            String(d.id ?? d.deptId) === String(emp_dept_id)
+          );
+          const leadId = dept?.lead_id ?? dept?.leadId;
+          if (leadId) {
+            const lead = (employees || []).find(e => String(e.id) === String(leadId));
+            leadName = lead?.fullName || lead?.full_name || lead?.name || null;
+          }
+        }
+      } catch (_) { /* fall through to null */ }
+
       const doc = buildPerformanceReviewDoc({
         employeeName: emp.fullName || emp.name,
         employeeId: emp.id,
+        leadName: leadName, // v4.5 — surfaced on the PDF in place of Employee ID
         department: emp.department,
         role: emp.role || 'Employee',
         periodFrom: startDate,

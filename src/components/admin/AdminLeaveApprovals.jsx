@@ -6,7 +6,11 @@ function AdminLeaveApprovals({ user }) {
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
   // Leave id we're rejecting — when set, the reason-prompt modal is shown.
+  // Special value 'BULK' indicates a bulk reject is being collected.
   const [rejectFor, setRejectFor] = useState(null);
+  // Multi-select: ids of requests currently checked for bulk action.
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
 
   useEffect(() => {
     loadAssignedRequests();
@@ -19,6 +23,13 @@ function AdminLeaveApprovals({ user }) {
       if (result.success) {
         setRequests(result.data || []);
         setErrorMessage('');
+        // Drop any selections that no longer exist in the refreshed list.
+        setSelectedIds(prev => {
+          const stillThere = new Set((result.data || []).map(r => r.id));
+          const next = new Set();
+          prev.forEach(id => { if (stillThere.has(id)) next.add(id); });
+          return next;
+        });
       } else {
         setErrorMessage(result.message || 'Failed to load leave requests');
       }
@@ -76,6 +87,68 @@ function AdminLeaveApprovals({ user }) {
     }
   };
 
+  // -- Bulk helpers -----------------------------------------------------------
+  const toggleOne = (id) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleAll = () => {
+    setSelectedIds(prev => {
+      if (prev.size === requests.length) return new Set();
+      return new Set(requests.map(r => r.id));
+    });
+  };
+
+  const handleBulkApprove = async () => {
+    if (selectedIds.size === 0) return;
+    const ids = Array.from(selectedIds);
+    setBulkBusy(true);
+    try {
+      const results = await Promise.all(
+        ids.map(id =>
+          window.electron.approveLeaveRequest(id, 'Approved by administrator (bulk)', myId)
+            .then(r => ({ id, ok: !!r?.success, msg: r?.message || r?.error || '' }))
+            .catch(err => ({ id, ok: false, msg: err?.message || 'Failed' }))
+        )
+      );
+      const ok = results.filter(r => r.ok).length;
+      const fail = results.length - ok;
+      if (ok > 0) window.toast.success(`Approved ${ok} request${ok === 1 ? '' : 's'}.`);
+      if (fail > 0) window.toast.error(`${fail} request${fail === 1 ? '' : 's'} failed to approve.`);
+      setSelectedIds(new Set());
+      loadAssignedRequests();
+    } finally {
+      setBulkBusy(false);
+    }
+  };
+
+  const handleBulkReject = async (reason) => {
+    if (selectedIds.size === 0) return;
+    const ids = Array.from(selectedIds);
+    setBulkBusy(true);
+    try {
+      const results = await Promise.all(
+        ids.map(id =>
+          window.electron.rejectLeaveRequest(id, reason || 'Rejected by administrator (bulk)', myId)
+            .then(r => ({ id, ok: !!r?.success, msg: r?.message || r?.error || '' }))
+            .catch(err => ({ id, ok: false, msg: err?.message || 'Failed' }))
+        )
+      );
+      const ok = results.filter(r => r.ok).length;
+      const fail = results.length - ok;
+      if (ok > 0) window.toast.success(`Rejected ${ok} request${ok === 1 ? '' : 's'}.`);
+      if (fail > 0) window.toast.error(`${fail} request${fail === 1 ? '' : 's'} failed to reject.`);
+      setSelectedIds(new Set());
+      loadAssignedRequests();
+    } finally {
+      setBulkBusy(false);
+    }
+  };
+
   if (loading) return <div className="loading">Loading leave requests...</div>;
 
   const renderStageBadge = (req) => {
@@ -93,6 +166,9 @@ function AdminLeaveApprovals({ user }) {
     return <span className="badge badge-warning">Pending</span>;
   };
 
+  const allSelected = requests.length > 0 && selectedIds.size === requests.length;
+  const someSelected = selectedIds.size > 0 && selectedIds.size < requests.length;
+
   return (
     <div className="manager-container">
       <div className="manager-header">
@@ -108,10 +184,59 @@ function AdminLeaveApprovals({ user }) {
         </div>
       )}
 
+      {/* Bulk action bar — only shown when at least one row is selected. */}
+      {selectedIds.size > 0 && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: '12px',
+          padding: '10px 14px', margin: '12px 0',
+          background: 'rgba(16,185,129,0.08)',
+          border: '1px solid rgba(16,185,129,0.3)',
+          borderRadius: '8px'
+        }}>
+          <strong style={{ color: 'var(--text-1, #e5e7eb)' }}>
+            {selectedIds.size} selected
+          </strong>
+          <button
+            className="btn btn-primary btn-sm"
+            disabled={bulkBusy}
+            onClick={handleBulkApprove}
+            style={{ padding: '6px 12px', fontSize: '12px' }}
+          >
+            ✓ Approve Selected
+          </button>
+          <button
+            className="btn btn-danger btn-sm"
+            disabled={bulkBusy}
+            onClick={() => setRejectFor('BULK')}
+            style={{ padding: '6px 12px', fontSize: '12px' }}
+          >
+            ✗ Reject Selected
+          </button>
+          <button
+            className="btn btn-secondary btn-sm"
+            disabled={bulkBusy}
+            onClick={() => setSelectedIds(new Set())}
+            style={{ padding: '6px 12px', fontSize: '12px', marginLeft: 'auto' }}
+          >
+            Clear
+          </button>
+        </div>
+      )}
+
       <div className="table-wrapper">
         <table className="table">
           <thead>
             <tr>
+              <th style={{ width: '36px', textAlign: 'center' }}>
+                <input
+                  type="checkbox"
+                  checked={allSelected}
+                  ref={el => { if (el) el.indeterminate = someSelected; }}
+                  onChange={toggleAll}
+                  disabled={requests.length === 0}
+                  title="Select all"
+                />
+              </th>
               <th>Employee</th>
               <th>Department</th>
               <th>Leave Type</th>
@@ -132,7 +257,14 @@ function AdminLeaveApprovals({ user }) {
               </tr>
             ) : (
               requests.map(req => (
-                <tr key={req.id}>
+                <tr key={req.id} style={selectedIds.has(req.id) ? { background: 'rgba(16,185,129,0.06)' } : null}>
+                  <td style={{ textAlign: 'center' }}>
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(req.id)}
+                      onChange={() => toggleOne(req.id)}
+                    />
+                  </td>
                   <td>{req.full_name}</td>
                   <td>{req.department_name || '-'}</td>
                   <td>{req.leave_type_name}</td>
@@ -166,12 +298,20 @@ function AdminLeaveApprovals({ user }) {
 
       {rejectFor && (
         <ReasonPrompt
-          title="Reject Leave Request"
-          message="Add a reason for the employee — leave blank to use a default note."
+          title={rejectFor === 'BULK' ? `Reject ${selectedIds.size} Leave Request${selectedIds.size === 1 ? '' : 's'}` : 'Reject Leave Request'}
+          message={rejectFor === 'BULK'
+            ? 'This reason will be sent to every selected employee — leave blank to use a default note.'
+            : 'Add a reason for the employee — leave blank to use a default note.'}
           placeholder="e.g. Conflicts with project deadline"
           submitLabel="Reject"
           cancelLabel="Cancel"
-          onSubmit={(reason) => doReject(rejectFor, reason)}
+          onSubmit={(reason) => {
+            if (rejectFor === 'BULK') {
+              handleBulkReject(reason);
+            } else {
+              doReject(rejectFor, reason);
+            }
+          }}
           onClose={() => setRejectFor(null)}
         />
       )}

@@ -17,6 +17,9 @@ import EmployeeDocuments from '../components/common/EmployeeDocuments';
 import ChatWidget from '../components/common/ChatWidget';
 import logoImage from '../assets/logo.png';
 import NotificationBell from '../components/common/NotificationBell';
+import QuickSignInChip from '../components/common/QuickSignInChip';
+import ProfileCompleteness from '../components/common/ProfileCompleteness';
+import OrgChart from '../components/common/OrgChart';
 import CelebrationsWidget from '../components/common/CelebrationsWidget';
 import {
   AttendanceTodayChart,
@@ -78,6 +81,7 @@ function LeadDashboard({ user, onLogout }) {
     { id: 'my-leave', label: 'My Leave Requests', icon: 'calendar-check', path: '/my-leave' },
     { id: 'my-performance', label: 'My Performance', icon: 'star', path: '/my-performance' },
     { id: 'my-documents', label: 'My Documents', icon: 'file', path: '/my-documents' },
+    { id: 'org-chart', label: 'Org Chart', icon: 'sitemap', path: '/org-chart' },
   ];
 
   return (
@@ -99,6 +103,7 @@ function LeadDashboard({ user, onLogout }) {
             <h1>Department Lead Dashboard</h1>
             <p className="welcome-text">Welcome, {user.fullName}</p>
           </div>
+          <QuickSignInChip user={user} />
           <ChatWidget user={user} mode="header" />
           <NotificationBell user={user} />
           <div style={{
@@ -141,6 +146,7 @@ function LeadDashboard({ user, onLogout }) {
             <Route path="/my-attendance/*" element={<AttendanceLogger user={user} />} />
             <Route path="/my-leave/*" element={<LeaveCalendar user={user} />} />
             <Route path="/my-performance/*" element={<EmployeePerformanceReview user={user} />} />
+            <Route path="/org-chart/*" element={<OrgChart />} />
             <Route path="/my-documents/*" element={
               <div className="manager-container">
                 <div className="manager-header">
@@ -296,10 +302,12 @@ function LeadOverview({ user }) {
                 user.fullName?.charAt(0)
               )}
             </div>
-            <div className="profile-info">
+            <div className="profile-info" style={{ flex: 1 }}>
               <h2>{user.fullName}</h2>
               <p>{user.email}</p>
             </div>
+            {/* v4.5 — Profile completeness ring */}
+            {profile && <ProfileCompleteness employee={profile} size={64} />}
           </div>
 
           {profile && (
@@ -539,7 +547,24 @@ function LeadOverview({ user }) {
       <CelebrationsWidget departmentId={departmentId} title="🎉 Team Birthdays & Anniversaries" />
 
       {/* Upcoming Leaves — plan around your team's approved absences */}
-      <h3 style={{ marginTop: '24px', marginBottom: '8px', color: 'var(--text)' }}>Upcoming Leaves</h3>
+      <div style={{ marginTop: '24px', marginBottom: '8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+        <h3 style={{ margin: 0, color: 'var(--text)' }}>Upcoming Leaves</h3>
+        {upcomingLeaves.length > 0 && (
+          <button
+            type="button"
+            onClick={async () => {
+              const { buildIcsCalendar, downloadIcs } = await import('../utils/icsExport');
+              downloadIcs(
+                buildIcsCalendar(upcomingLeaves, { calendarName: 'TaskTango — Team Leaves' }),
+                'tasktango-team-leaves.ics'
+              );
+            }}
+            className="btn btn-secondary"
+            style={{ padding: '6px 12px', fontSize: 12 }}
+            title="Download as .ics for Outlook / Google Calendar / Apple Calendar"
+          >📅 Export to Calendar</button>
+        )}
+      </div>
       <div className="form-section" style={{ marginTop: '8px' }}>
         {upcomingLeaves.length === 0 ? (
           <p style={{ color: 'var(--text-2)', margin: 0 }}>No upcoming approved leaves for your team.</p>

@@ -230,6 +230,8 @@
     getSetting: (key) => invoke('settings:get', { key }),
     setSetting: (key, value) => invoke('settings:set', { key, value }),
     downloadDbBackup: () => invoke('settings:downloadBackup'),
+    // v4.5 — admin nuke for testing data; pass 'WIPE' to confirm.
+    wipeTestData:     (confirm) => invoke('admin:wipeTestData', { confirm }),
 
     // Holidays
     getHolidaysList: () => invoke('holiday:getList', {}),
@@ -285,6 +287,7 @@
     // v3.4 attachment fetch + open. Pass the absolute attachment_path stored
     // on the chat_messages row; the handler enforces a path-jail so only
     // files under userData/chat-attachments/ are reachable.
+    chatGetPresence:       (userIds) => invoke('chat:getPresence', { userIds }),
     chatReadAttachment:    (attachmentPath) => invoke('chat:readAttachment', attachmentPath),
     chatOpenAttachment:    (attachmentPath) => invoke('chat:openAttachment', attachmentPath),
     // v4.0 voice/video call signalling. The actual media negotiation happens

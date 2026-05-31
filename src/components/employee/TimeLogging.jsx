@@ -19,7 +19,7 @@ import { generatePdf } from '../../utils/pdf/pdfGenerator';
 // Register Chart.js components (must run once on module load)
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
-function TimeLogging({ user }) {
+function TimeLogging({ user, canEdit = false }) {
   const [selectedDate, setSelectedDate] = useState(getOfficeDate());
   const [timeLog, setTimeLog] = useState({
     startTime: '',
@@ -1746,22 +1746,24 @@ function TimeLogging({ user }) {
                         })()}
                       </div>
 
-                      <div className="log-actions">
-                        <button
-                          onClick={() => handleEdit(log.id)}
-                          className="btn-edit"
-                          disabled={loading}
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => setShowDeleteConfirm(log.id)}
-                          className="btn-delete"
-                          disabled={loading}
-                        >
-                          Delete
-                        </button>
-                      </div>
+                      {canEdit && (
+                        <div className="log-actions">
+                          <button
+                            onClick={() => handleEdit(log.id)}
+                            className="btn-edit"
+                            disabled={loading}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => setShowDeleteConfirm(log.id)}
+                            className="btn-delete"
+                            disabled={loading}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      )}
 
                       {showDeleteConfirm === log.id && (
                         <div className="delete-confirm">

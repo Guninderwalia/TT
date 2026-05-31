@@ -344,7 +344,89 @@ function SettingsPage({ user }) {
               <code>%APPDATA%\TaskTango\</code> while the app is closed.
             </p>
           </div>
+
+          {/* v4.5 — Wipe Test Data ====================================== */}
+          <WipeTestDataPanel />
         </>
+      )}
+    </div>
+  );
+}
+
+// One-click admin nuke for everything an employee can generate. Keeps the
+// admin user(s) + lookups (roles, leave types, settings) so the app boots
+// straight into a clean production state. Requires typing "WIPE" to confirm.
+function WipeTestDataPanel() {
+  const [confirmText, setConfirmText] = React.useState('');
+  const [wiping, setWiping] = React.useState(false);
+  const [result, setResult] = React.useState(null);
+  const [error, setError] = React.useState('');
+
+  const handleWipe = async () => {
+    setError('');
+    setResult(null);
+    setWiping(true);
+    try {
+      const r = await window.electron.wipeTestData('WIPE');
+      if (r?.success) {
+        setResult(r.wiped || {});
+        setConfirmText('');
+        if (window.toast) window.toast.success('Test data wiped. Reload the page to see the clean state.');
+      } else {
+        setError(r?.message || 'Wipe failed');
+      }
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setWiping(false);
+    }
+  };
+
+  return (
+    <div className="form-section" style={{ borderLeft: '4px solid #ef4444' }}>
+      <h3>💥 Wipe Test Data</h3>
+      <p style={{ color: 'var(--text-2)', fontSize: '13px', marginTop: 0 }}>
+        Deletes every employee, attendance row, time log, leave request, payroll record, chat
+        message, document, and audit entry — but keeps your admin account, roles, leave types,
+        timezone, and other settings intact. Useful for clearing test data before going live.
+      </p>
+      <p style={{ color: '#ef4444', fontSize: '13px', fontWeight: 600, marginBottom: 12 }}>
+        ⚠️ This is irreversible. Take a Database Backup first.
+      </p>
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+        <input
+          type="text"
+          placeholder='Type WIPE to confirm'
+          value={confirmText}
+          onChange={(e) => setConfirmText(e.target.value)}
+          style={{
+            flex: '1 1 220px', padding: '8px 12px', borderRadius: 6,
+            border: '1px solid var(--border)', background: 'var(--bg-3)', color: 'var(--text)'
+          }}
+          disabled={wiping}
+        />
+        <button
+          type="button"
+          className="btn btn-danger"
+          onClick={handleWipe}
+          disabled={wiping || confirmText !== 'WIPE'}
+          title={confirmText !== 'WIPE' ? 'Type WIPE to enable' : 'Wipe all test data'}
+        >
+          {wiping ? 'Wiping…' : 'Wipe All Test Data'}
+        </button>
+      </div>
+      {error && (
+        <p style={{ marginTop: 12, color: '#ef4444', fontSize: 13 }}>{error}</p>
+      )}
+      {result && (
+        <div style={{ marginTop: 12, padding: 10, background: 'rgba(16,185,129,0.1)', borderRadius: 6, fontSize: 12 }}>
+          <strong>Wipe summary:</strong>
+          <ul style={{ margin: '6px 0 0', paddingLeft: 18 }}>
+            {Object.entries(result).map(([table, count]) => (
+              <li key={table}>{table}: {count} row{count === 1 ? '' : 's'}</li>
+            ))}
+          </ul>
+        </div>
       )}
     </div>
   );

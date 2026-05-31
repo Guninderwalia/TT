@@ -583,6 +583,52 @@ function register(ipcMain, db) {
   });
 
   // -------------------------------------------------------------------------
+  // v4.5 — Presence snapshot. Combines the live SSE subscriber map (who's
+  // actually got the app open) with today's attendance + time_log rows so
+  // the dot accurately reflects "is this person reachable / working right
+  // now?". Returns one row per requested userId so the renderer can render
+  // a dot without N round-trips.
+  ipcMain.handle('chat:getPresence', async (_event, { userIds } = {}) => {
+    try {
+      if (!Array.isArray(userIds) || userIds.length === 0) {
+        return { success: true, data: [] };
+      }
+      const officeTime = require('../../utils/officeTime');
+      const today = officeTime.getOfficeDate();
+      // One query for both joins keyed by user id.
+      const placeholders = userIds.map(() => '?').join(',');
+      const rows = await db.all(
+        `SELECT u.id            AS user_id,
+                a.status        AS attendance_status,
+                a.sign_in_time, a.sign_out_time,
+                t.start_time, t.break_start_time, t.break_end_time, t.end_time
+           FROM users u
+           LEFT JOIN attendance  a ON a.user_id = u.id AND a.date = ?
+           LEFT JOIN time_logs   t ON t.user_id = u.id AND t.date = ?
+          WHERE u.id IN (${placeholders})`,
+        [today, today, ...userIds]
+      );
+
+      const data = rows.map(r => {
+        const s = (r.attendance_status || '').toLowerCase();
+        const isOnline = _subscribers.has(r.user_id);
+        let status = 'offline';
+        if (s === 'absent')       status = 'absent';
+        else if (s === 'leave')   status = 'on-leave';
+        else if (r.end_time)      status = 'signed-off';
+        else if (r.break_start_time && !r.break_end_time) status = 'on-break';
+        else if (r.start_time || r.sign_in_time) status = 'working';
+        else if (isOnline)        status = 'idle';      // signed in to the app but not yet stamped sign-in
+        return { userId: r.user_id, status, isOnline };
+      });
+      return { success: true, data };
+    } catch (error) {
+      console.error('[CHAT] getPresence error:', error);
+      return { success: false, message: error.message };
+    }
+  });
+
+  // -------------------------------------------------------------------------
   // Read a chat attachment's bytes as base64 so the renderer can embed it
   // (typically as a data URL for inline image previews). Validates that the
   // path lives under the canonical attachments directory — refuses to read

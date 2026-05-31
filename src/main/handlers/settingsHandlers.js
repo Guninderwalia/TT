@@ -119,4 +119,85 @@ function register(ipcMain, db) {
   });
 }
 
-module.exports = { register };
+// v4.5 — Wipe Test Data
+// Admin-only nuke for everything an employee can generate: attendance,
+// time_logs, leave_requests, leave_balances, events, notifications, audit,
+// chat, payroll, salary_increments, monthly_expenses, employee_documents,
+// employee_skills, banking_details, probation_deposits, overtime,
+// employment_records, AND every non-admin user. Keeps: roles, leave_types,
+// app_settings, predefined_skills, manager_reviews template (cleared too),
+// departments (cleared, can be recreated), and the original admin user(s).
+function registerWipe(ipcMain, db) {
+  ipcMain.handle('admin:wipeTestData', async (_event, args = {}) => {
+    const { confirm } = args || {};
+    if (confirm !== 'WIPE') {
+      return { success: false, message: 'Confirmation token missing — pass {confirm:"WIPE"}.' };
+    }
+    try {
+      // Wrap in a transaction so a partial wipe doesn't leave orphaned rows.
+      await db.exec('BEGIN');
+      const wiped = {};
+      const wipe = async (table) => {
+        try {
+          const r = await db.run(`DELETE FROM ${table}`);
+          wiped[table] = r?.changes ?? 0;
+        } catch (e) {
+          // Tables that don't exist in this install just get skipped — same
+          // shape as the legacy migration safety-net.
+          wiped[table] = 0;
+        }
+      };
+      // Order matters for foreign-key parents — wipe children first.
+      await wipe('chat_messages');
+      await wipe('chat_participants');
+      await wipe('chat_conversations');
+      await wipe('audit_logs');
+      await wipe('notifications');
+      await wipe('events');
+      await wipe('time_logs');
+      await wipe('attendance');
+      await wipe('leave_requests');
+      await wipe('leave_balances');
+      await wipe('leave_balance_rollover_log');
+      await wipe('monthly_expenses');
+      await wipe('payroll');
+      await wipe('salary_increments');
+      await wipe('overtime');
+      await wipe('probation_deposits');
+      await wipe('employee_documents');
+      await wipe('employee_skills');
+      await wipe('manager_reviews');
+      await wipe('banking_details');
+      await wipe('employment_records');
+
+      // Delete non-admin users (keep Admin, MD, Managing Director roles).
+      const adminRoleIds = await db.all(
+        `SELECT id FROM roles WHERE LOWER(name) IN ('admin','administrator','md','managing director')`
+      );
+      const keepIds = adminRoleIds.map(r => `'${r.id}'`).join(',') || "''";
+      const userDel = await db.run(`DELETE FROM users WHERE role_id NOT IN (${keepIds})`);
+      wiped.users = userDel?.changes ?? 0;
+
+      // Clear departments (admin recreates real ones after wipe).
+      await wipe('departments');
+
+      await db.exec('COMMIT');
+      console.log('[ADMIN] Wipe complete:', wiped);
+      return { success: true, message: 'Test data wiped.', wiped };
+    } catch (error) {
+      try { await db.exec('ROLLBACK'); } catch (_) {}
+      console.error('[ADMIN] Wipe failed:', error);
+      return { success: false, message: error.message };
+    }
+  });
+}
+
+// Both the original `register` (defined above) and the new wipe handler
+// get wired up. The wrapper preserves the same public shape callers expect:
+// require('./settingsHandlers').register(ipcMain, db).
+module.exports = {
+  register: (ipcMain, db) => {
+    register(ipcMain, db);
+    registerWipe(ipcMain, db);
+  }
+};

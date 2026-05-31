@@ -374,8 +374,12 @@ export function buildPerformanceReviewDoc(data = {}) {
   const skills = Array.isArray(data.skills) ? data.skills : [];
   const fmtPct = (v) => (v == null || isNaN(v)) ? '-' : Number(v).toFixed(1) + '%';
   const stars  = (rating) => {
+    // pdfMake bundles a Roboto subset that doesn't include the star glyphs
+    // (★ U+2605, ⭐ U+2B50, even ☆ U+2606) — they all render as tofu boxes
+    // in the generated PDF. Using a textual "X/5" format that's pure ASCII
+    // so it renders cleanly on every machine without bundling a custom font.
     const n = Math.max(0, Math.min(5, Math.round(Number(rating) || 0)));
-    return '★'.repeat(n) + '☆'.repeat(5 - n);
+    return `${n} / 5`;
   };
   const scoreColor = (score) => {
     if (score == null) return BRAND.muted;
@@ -404,8 +408,8 @@ export function buildPerformanceReviewDoc(data = {}) {
             stack: [
               { text: 'Review Period', style: 'label' },
               { text: `${formatDate(data.periodFrom)} — ${formatDate(data.periodTo)}`, style: 'value' },
-              { text: 'Employee ID', style: 'label', margin: [0, 6, 0, 0] },
-              { text: data.employeeId || '-', style: 'value' }
+              { text: 'Team Lead', style: 'label', margin: [0, 6, 0, 0] },
+              { text: data.leadName || '— No lead assigned —', style: 'value' }
             ]
           }
         ],
@@ -473,8 +477,8 @@ export function buildPerformanceReviewDoc(data = {}) {
           {
             stack: [
               { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 180, y2: 0, lineWidth: 0.7, lineColor: BRAND.text }], margin: [0, 0, 0, 4] },
-              { text: data.managerName || 'Manager', style: 'value' },
-              { text: 'Reviewed by', style: 'label' }
+              { text: data.leadName || data.managerName || 'Team Lead', style: 'value' },
+              { text: 'Reviewed by Team Lead', style: 'label' }
             ]
           },
           {
