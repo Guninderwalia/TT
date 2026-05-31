@@ -288,11 +288,22 @@ function register(ipcMain, db) {
     }
   });
 
+  // v4.6.2 — Identity helper. In web mode the Node process is shared across
+  // many users, and after a deploy/restart the module-scoped `currentUser`
+  // is null even though browser tabs still have their identity. The web
+  // shim sends the user id in the x-user-id header, which webServer.js
+  // mirrors onto event.sender.id. Use that as a fallback.
+  function callerId(event) {
+    if (currentUser?.id) return currentUser.id;
+    return event?.sender?.id || null;
+  }
+
   // v4.6 — Active session listing for the current user. Excludes revoked rows
   // and rows that haven't been seen in 30 days (stale).
-  ipcMain.handle('auth:listMySessions', async () => {
+  ipcMain.handle('auth:listMySessions', async (event) => {
     try {
-      if (!currentUser) return { success: false, message: 'Not logged in', data: [] };
+      const userId = callerId(event);
+      if (!userId) return { success: false, message: 'Not logged in', data: [] };
       const rows = await db.all(
         `SELECT id, ip_address, user_agent, device_label, created_at, last_seen_at
            FROM user_sessions
@@ -300,11 +311,11 @@ function register(ipcMain, db) {
             AND revoked_at IS NULL
             AND last_seen_at >= datetime('now', '-30 days')
           ORDER BY last_seen_at DESC`,
-        [currentUser.id]
+        [userId]
       );
       const data = rows.map(r => ({
         ...r,
-        isCurrent: r.id === currentUser.sessionId
+        isCurrent: r.id === currentUser?.sessionId
       }));
       return { success: true, data };
     } catch (error) {
@@ -317,9 +328,10 @@ function register(ipcMain, db) {
   // own session (use auth:logout for that).
   ipcMain.handle('auth:revokeSession', async (event, { sessionId }) => {
     try {
-      if (!currentUser) return { success: false, message: 'Not logged in' };
+      const userId = callerId(event);
+      if (!userId) return { success: false, message: 'Not logged in' };
       if (!sessionId) return { success: false, message: 'sessionId required' };
-      if (sessionId === currentUser.sessionId) {
+      if (currentUser?.sessionId && sessionId === currentUser.sessionId) {
         return { success: false, message: 'Use logout to end the current session' };
       }
       const result = await db.run(
@@ -328,7 +340,7 @@ function register(ipcMain, db) {
           WHERE id = ?
             AND user_id = ?
             AND revoked_at IS NULL`,
-        [sessionId, currentUser.id]
+        [sessionId, userId]
       );
       return { success: true, changes: result?.changes || 0 };
     } catch (error) {
@@ -338,16 +350,17 @@ function register(ipcMain, db) {
   });
 
   // v4.6 — "Sign out everywhere else" — revoke every other active session.
-  ipcMain.handle('auth:revokeAllOtherSessions', async () => {
+  ipcMain.handle('auth:revokeAllOtherSessions', async (event) => {
     try {
-      if (!currentUser) return { success: false, message: 'Not logged in' };
+      const userId = callerId(event);
+      if (!userId) return { success: false, message: 'Not logged in' };
       const result = await db.run(
         `UPDATE user_sessions
             SET revoked_at = CURRENT_TIMESTAMP
           WHERE user_id = ?
             AND revoked_at IS NULL
             AND id != COALESCE(?, '')`,
-        [currentUser.id, currentUser.sessionId || '']
+        [userId, currentUser?.sessionId || '']
       );
       return { success: true, revoked: result?.changes || 0 };
     } catch (error) {
@@ -358,14 +371,15 @@ function register(ipcMain, db) {
 
   // v4.6 — Mark onboarding wizard completed for the current user. Called by
   // the wizard's Done step so we don't show it again.
-  ipcMain.handle('auth:completeOnboarding', async () => {
+  ipcMain.handle('auth:completeOnboarding', async (event) => {
     try {
-      if (!currentUser) return { success: false, message: 'Not logged in' };
+      const userId = callerId(event);
+      if (!userId) return { success: false, message: 'Not logged in' };
       await db.run(
         `UPDATE users SET onboarding_completed = 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
-        [currentUser.id]
+        [userId]
       );
-      currentUser.onboardingCompleted = true;
+      if (currentUser) currentUser.onboardingCompleted = true;
       return { success: true };
     } catch (error) {
       console.error('completeOnboarding error:', error);

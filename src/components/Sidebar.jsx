@@ -69,7 +69,10 @@ function Sidebar({ user, navItems, activeNav, onNavChange, onLogout }) {
           {/* Theme toggle — fixed-size circle to the right of the user block. */}
           <ThemeToggle compact />
         </div>
-        <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+        {/* v4.6.2 — Two rows so the Logout button always fits on narrow
+            sidebars. Original layout crammed 4 buttons into one flex row;
+            on tighter widths Logout got squeezed off-screen. */}
+        <div style={{ display: 'flex', gap: '8px', marginBottom: '6px' }}>
           <button
             className="logout-btn"
             onClick={() => setShowHelpModal(true)}
@@ -80,6 +83,16 @@ function Sidebar({ user, navItems, activeNav, onNavChange, onLogout }) {
           </button>
           <button
             className="logout-btn"
+            onClick={() => setShowSessionsModal(true)}
+            title="Active Sessions across all your devices"
+            style={{ flex: 1, fontSize: '12px' }}
+          >
+            🔐 Sessions
+          </button>
+        </div>
+        <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+          <button
+            className="logout-btn"
             onClick={() => setShowPasswordModal(true)}
             title="Change Password"
             style={{ flex: 1, fontSize: '12px' }}
@@ -88,14 +101,11 @@ function Sidebar({ user, navItems, activeNav, onNavChange, onLogout }) {
           </button>
           <button
             className="logout-btn"
-            onClick={() => setShowSessionsModal(true)}
-            title="Active Sessions"
-            style={{ flex: 1, fontSize: '12px' }}
+            onClick={onLogout}
+            title="Logout from this device"
+            style={{ flex: 1, fontSize: '12px', background: 'rgba(239,68,68,0.15)', borderColor: 'rgba(239,68,68,0.35)' }}
           >
-            🔐 Sessions
-          </button>
-          <button className="logout-btn" onClick={onLogout} title="Logout" style={{ flex: 1 }}>
-            Logout
+            🚪 Logout
           </button>
         </div>
 
