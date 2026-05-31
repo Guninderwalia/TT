@@ -34,11 +34,6 @@ function hhmmGte(a, b) {
   return String(a).slice(0, 5) >= String(b).slice(0, 5);
 }
 
-// v4.7.1 — Exported so the chat presence helper + dashboard widgets can
-// use the same definition of "non-working day" the cron does. Keeping
-// one source of truth here avoids drift.
-module.exports.isNonWorkingDay = (db, today) => isNonWorkingDay(db, today);
-
 // Returns true if `today` is a non-working day for the company:
 //   - Saturday or Sunday (the default weekend, until a per-employee weekly
 //     schedule is added in a later release), OR
@@ -252,4 +247,9 @@ function start(db) {
   }, 60 * 60 * 1000);
 }
 
-module.exports = { start, runAllNow, runAutoMarkAbsent, runProbationFlip, runAutoSignOut };
+// v4.7.2 — isNonWorkingDay added to exports so chat presence + dashboard
+// widgets can share the same definition. (V4.7.1 set it BEFORE the
+// `module.exports = {...}` block below, which wiped it out — the chat
+// presence helper silently caught the require() failure and treated
+// every day as a working day, leaving Sunday red on every dashboard.)
+module.exports = { start, runAllNow, runAutoMarkAbsent, runProbationFlip, runAutoSignOut, isNonWorkingDay };

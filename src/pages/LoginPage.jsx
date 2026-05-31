@@ -129,7 +129,7 @@ function LoginPage({ onLogin }) {
             Designed &amp; developed by <strong style={{ color: 'rgba(255,255,255,0.85)' }}>Guninder Ahluwalia</strong>
             <br />
             <span style={{ fontFamily: 'Consolas, "Courier New", monospace', fontSize: 10, opacity: 0.7 }}>
-              Production v4.7.1 · © {new Date().getFullYear()}
+              Production v4.7.2 · © {new Date().getFullYear()}
             </span>
           </div>
         </div>

@@ -40,7 +40,7 @@ applyTheme(getTheme());
 // Bump this single constant when packaging a new build. The label is rendered
 // in the bottom-right corner on every screen (incl. login) so it's easy to
 // confirm which version is running. Click the badge to open the About modal.
-const BUILD_VERSION = 'Production v4.7.1';
+const BUILD_VERSION = 'Production v4.7.2';
 const APP_DEVELOPER = 'Guninder Ahluwalia';
 const APP_YEAR      = new Date().getFullYear();
 
@@ -126,6 +126,31 @@ function AboutModal({ onClose, roleClass }) {
     } catch (_) {
       window.open(url, '_blank', 'noopener,noreferrer');
     }
+  };
+
+  // v4.7.2 — Install-on-phone helpers. Always show this section so the
+  // user can find it without waiting for the auto-banner (which only
+  // fires once per device and never on iOS).
+  const ua = (typeof navigator !== 'undefined' && navigator.userAgent) || '';
+  const isStandalone = typeof window !== 'undefined' && (
+    window.matchMedia?.('(display-mode: standalone)').matches
+    || window.navigator?.standalone === true
+  );
+  const isIos = /iPhone|iPad|iPod/i.test(ua);
+  const isAndroid = /Android/i.test(ua);
+  const onWeb = !(typeof window !== 'undefined' && window.electron && !window.__isWebShim);
+  // Captured beforeinstallprompt event, shared via window.__ttInstallPrompt
+  const [installEvent, setInstallEvent] = React.useState(() => window.__ttInstallPrompt || null);
+  React.useEffect(() => {
+    const onPrompt = (e) => { e.preventDefault?.(); window.__ttInstallPrompt = e; setInstallEvent(e); };
+    window.addEventListener('beforeinstallprompt', onPrompt);
+    return () => window.removeEventListener('beforeinstallprompt', onPrompt);
+  }, []);
+  const triggerInstall = async () => {
+    if (!installEvent) return;
+    try { installEvent.prompt(); await installEvent.userChoice; } catch (_) {}
+    window.__ttInstallPrompt = null;
+    setInstallEvent(null);
   };
 
   // Show every guide, but float the role-specific one to the top so the
@@ -218,6 +243,84 @@ function AboutModal({ onClose, roleClass }) {
             All four guides written by Guninder Ahluwalia.
           </p>
         </div>
+
+        {/* v4.7.2 — Install on Phone section. Always visible so users can
+            find it without waiting for the auto-banner (which never fires
+            on iOS and only fires once on Android). */}
+        {onWeb && !isStandalone && (
+          <div style={{ marginTop: 22, textAlign: 'left' }}>
+            <div style={{
+              fontSize: 11, textTransform: 'uppercase', letterSpacing: '1.2px',
+              color: 'var(--text-2, #9ca3af)', fontWeight: 700, marginBottom: 8
+            }}>
+              📱 Install TaskTango on this device
+            </div>
+            <div style={{
+              background: 'rgba(14,165,233,0.08)',
+              border: '1px solid rgba(14,165,233,0.3)',
+              borderRadius: 8, padding: '12px 14px', fontSize: 12.5, lineHeight: 1.5
+            }}>
+              {isIos ? (
+                <div>
+                  <strong style={{ color: '#7dd3fc' }}>iPhone / iPad:</strong>
+                  <ol style={{ margin: '6px 0 0 18px', padding: 0 }}>
+                    <li>You must be using <strong>Safari</strong> (Chrome on iOS can't install apps)</li>
+                    <li>Tap the <strong>Share</strong> button at the bottom of Safari (square with ⬆️)</li>
+                    <li>Scroll down → tap <strong>Add to Home Screen</strong></li>
+                    <li>Confirm <strong>Add</strong> in the top-right</li>
+                  </ol>
+                </div>
+              ) : isAndroid ? (
+                <div>
+                  <strong style={{ color: '#7dd3fc' }}>Android:</strong>
+                  {installEvent ? (
+                    <div style={{ marginTop: 8 }}>
+                      <button onClick={triggerInstall} style={{
+                        background: '#0ea5e9', color: '#fff', border: 'none',
+                        padding: '8px 16px', borderRadius: 6, fontWeight: 700, cursor: 'pointer'
+                      }}>
+                        📲 Install Now
+                      </button>
+                    </div>
+                  ) : (
+                    <ol style={{ margin: '6px 0 0 18px', padding: 0 }}>
+                      <li>Tap the <strong>⋮</strong> menu in Chrome (top-right)</li>
+                      <li>Tap <strong>Install app</strong> or <strong>Add to Home screen</strong></li>
+                      <li>Confirm <strong>Install</strong></li>
+                    </ol>
+                  )}
+                </div>
+              ) : (
+                <div>
+                  <strong style={{ color: '#7dd3fc' }}>Desktop browser (Chrome / Edge):</strong>
+                  {installEvent ? (
+                    <div style={{ marginTop: 8 }}>
+                      <button onClick={triggerInstall} style={{
+                        background: '#0ea5e9', color: '#fff', border: 'none',
+                        padding: '8px 16px', borderRadius: 6, fontWeight: 700, cursor: 'pointer'
+                      }}>
+                        💻 Install on This Computer
+                      </button>
+                    </div>
+                  ) : (
+                    <p style={{ margin: '6px 0 0' }}>
+                      Look for the <strong>➕ install icon</strong> in your browser's address bar — click it,
+                      then confirm. TaskTango opens in its own window with no browser tabs.
+                    </p>
+                  )}
+                </div>
+              )}
+              <p style={{ margin: '10px 0 0', fontSize: 11.5, color: 'var(--text-2, #9ca3af)', fontStyle: 'italic' }}>
+                Once installed, TaskTango opens like a native app — full screen, on your home screen, with its own icon.
+              </p>
+            </div>
+          </div>
+        )}
+        {onWeb && isStandalone && (
+          <div style={{ marginTop: 22, fontSize: 12.5, color: '#34d399', textAlign: 'left' }}>
+            ✓ TaskTango is installed on this device.
+          </div>
+        )}
 
         <p style={{ fontSize: 11, color: 'var(--text-2, #9ca3af)', marginTop: 18, marginBottom: 0 }}>
           Enterprise HR &amp; Employee Management
