@@ -83,6 +83,36 @@ function HelpGuidesModal({ isOpen, onClose, roleClass }) {
           description={scoringGuide.description}
         />
 
+        {/* v4.6 — Always-visible About panel so web users can confirm
+            version and developer without hunting for the corner badge. */}
+        <div style={{
+          marginTop: 18, padding: '14px 16px',
+          background: 'rgba(255,255,255,0.04)',
+          border: '1px solid rgba(255,255,255,0.08)',
+          borderRadius: 8
+        }}>
+          <div style={{
+            fontSize: 11, textTransform: 'uppercase', letterSpacing: 1.2,
+            color: 'var(--text-2, #94a3b8)', fontWeight: 700, marginBottom: 6
+          }}>
+            About TaskTango
+          </div>
+          <div style={{ fontSize: 13.5, color: 'var(--text, #f3f4f6)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '3px 0' }}>
+              <span style={{ color: 'var(--text-2, #94a3b8)' }}>Version</span>
+              <strong>Production v4.6</strong>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '3px 0' }}>
+              <span style={{ color: 'var(--text-2, #94a3b8)' }}>Developed by</span>
+              <strong>Guninder Ahluwalia</strong>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '3px 0' }}>
+              <span style={{ color: 'var(--text-2, #94a3b8)' }}>Build year</span>
+              <strong>{new Date().getFullYear()}</strong>
+            </div>
+          </div>
+        </div>
+
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '20px' }}>
           <button
             type="button"

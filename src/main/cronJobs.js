@@ -34,10 +34,55 @@ function hhmmGte(a, b) {
   return String(a).slice(0, 5) >= String(b).slice(0, 5);
 }
 
+// Returns true if `today` is a non-working day for the company:
+//   - Saturday or Sunday (the default weekend, until a per-employee weekly
+//     schedule is added in a later release), OR
+//   - listed in the public_holidays table.
+// Admin can override the weekend default via the app_settings key
+// `non_working_dow` — comma-separated day-of-week numbers (0=Sun, 6=Sat).
+async function isNonWorkingDay(db, today) {
+  try {
+    // Day-of-week from the office-date string (YYYY-MM-DD). Build at noon UTC
+    // to avoid timezone slippage either side of midnight.
+    const dow = new Date(`${today}T12:00:00Z`).getUTCDay();
+
+    let nonWorkDow = [0, 6]; // default Sat/Sun
+    try {
+      const row = await db.get(
+        `SELECT value FROM app_settings WHERE key = 'non_working_dow'`
+      );
+      if (row && row.value) {
+        const parsed = String(row.value).split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n));
+        if (parsed.length > 0) nonWorkDow = parsed;
+      }
+    } catch (_) { /* settings table optional */ }
+    if (nonWorkDow.includes(dow)) return { skip: true, reason: `weekend (dow=${dow})` };
+
+    const hol = await db.get(
+      `SELECT holiday_name FROM public_holidays WHERE date = ?`,
+      [today]
+    );
+    if (hol) return { skip: true, reason: `public holiday (${hol.holiday_name})` };
+
+    return { skip: false };
+  } catch (e) {
+    console.warn('[CRON] isNonWorkingDay check failed:', e.message);
+    return { skip: false };
+  }
+}
+
 async function runAutoMarkAbsent(db) {
   try {
     const today = officeTime.getOfficeDate();
     const nowHHMM = officeTime.getOfficeHHMM();
+
+    // Skip on weekends and public holidays — running the cron on a non-working
+    // day was the v4.5 bug that turned every dashboard red on Sunday morning.
+    const check = await isNonWorkingDay(db, today);
+    if (check.skip) {
+      console.log(`[CRON] Skipping auto-mark-absent for ${today} — ${check.reason}`);
+      return;
+    }
 
     // Active employees with no attendance row today.
     // (employment_records.start_time gives the per-employee expected start.)
@@ -126,6 +171,14 @@ async function runAutoSignOut(db) {
     const nowHHMM = officeTime.getOfficeHHMM();
     // Only run after 23:00 office time so we don't sign people out early.
     if (nowHHMM < '23:00') return;
+
+    // Same weekend/holiday guard as auto-absent — no point auto-signing-out
+    // people who weren't supposed to work today anyway.
+    const check = await isNonWorkingDay(db, today);
+    if (check.skip) {
+      console.log(`[CRON] Skipping auto-sign-out for ${today} — ${check.reason}`);
+      return;
+    }
 
     const rows = await db.all(
       `SELECT a.id, a.user_id, a.sign_in_time,

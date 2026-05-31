@@ -54,6 +54,14 @@ async function runMigrations(db) {
     // Chat attachments — file/image attachments riding alongside text messages.
     await addAttachmentColumnsToChatMessages(db);
 
+    // v4.6 — User session tracking (login fingerprint, IP, UA) so a user
+    // can see other devices logged into their account and revoke them.
+    await createUserSessionsTableIfNeeded(db);
+
+    // v4.6 — Onboarding wizard completion flag so we only show the
+    // welcome wizard once per user (after their first password change).
+    await addOnboardingFlagToUsers(db);
+
     // Add other migrations here as needed
     // await updateExistingUsers(db);
 
@@ -516,6 +524,54 @@ async function addAttachmentColumnsToChatMessages(db) {
     }
   } catch (error) {
     console.error('[MIGRATIONS] Error adding chat-attachment columns:', error.message);
+  }
+}
+
+// v4.6 — user_sessions table
+async function createUserSessionsTableIfNeeded(db) {
+  try {
+    const exists = await db.get(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name='user_sessions'"
+    );
+    if (!exists) {
+      console.log('[MIGRATIONS] Creating user_sessions table...');
+      await db.run(`
+        CREATE TABLE IF NOT EXISTS user_sessions (
+          id TEXT PRIMARY KEY,
+          user_id TEXT NOT NULL,
+          token TEXT NOT NULL UNIQUE,
+          ip_address TEXT,
+          user_agent TEXT,
+          device_label TEXT,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          last_seen_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          revoked_at DATETIME,
+          FOREIGN KEY (user_id) REFERENCES users(id)
+        )
+      `);
+      await db.run(`CREATE INDEX IF NOT EXISTS idx_user_sessions_user ON user_sessions(user_id)`);
+      await db.run(`CREATE INDEX IF NOT EXISTS idx_user_sessions_token ON user_sessions(token)`);
+      console.log('[MIGRATIONS] ✓ user_sessions table ready');
+    }
+  } catch (error) {
+    console.error('[MIGRATIONS] Error creating user_sessions:', error.message);
+  }
+}
+
+// v4.6 — onboarding completion flag
+async function addOnboardingFlagToUsers(db) {
+  try {
+    const cols = await db.all("PRAGMA table_info(users)");
+    if (!cols.some(c => c.name === 'onboarding_completed')) {
+      console.log('[MIGRATIONS] Adding onboarding_completed column to users...');
+      await db.run(`ALTER TABLE users ADD COLUMN onboarding_completed BOOLEAN DEFAULT 0`);
+      // Backfill: existing users have already used the app, so mark them done
+      // — only brand-new joiners after this release will see the wizard.
+      await db.run(`UPDATE users SET onboarding_completed = 1 WHERE onboarding_completed IS NULL OR onboarding_completed = 0`);
+      console.log('[MIGRATIONS] ✓ onboarding_completed column added + backfilled');
+    }
+  } catch (error) {
+    console.error('[MIGRATIONS] Error adding onboarding_completed:', error.message);
   }
 }
 

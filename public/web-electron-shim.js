@@ -113,7 +113,13 @@
   // ──────────────────────────────────────────────────────────────────────────
   const electron = {
     // Auth
-    login: (email, password) => invoke('auth:login', { email, password }),
+    login: (email, password, clientInfo) => {
+      // Auto-fill clientInfo with the browser UA + best-effort device label so
+      // the user's session list has useful labels. IP is captured server-side.
+      const ua = (typeof navigator !== 'undefined' && navigator.userAgent) || null;
+      const info = { userAgent: ua, ...(clientInfo || {}) };
+      return invoke('auth:login', { email, password, clientInfo: info });
+    },
     changePassword: (oldPassword, newPassword, confirmPassword) =>
       invoke('auth:changePassword', { oldPassword, newPassword, confirmPassword }),
     changePasswordFirstLogin: (newPassword, confirmPassword) =>
@@ -288,6 +294,14 @@
     // on the chat_messages row; the handler enforces a path-jail so only
     // files under userData/chat-attachments/ are reachable.
     chatGetPresence:       (userIds) => invoke('chat:getPresence', { userIds }),
+    // v4.6 — broadcast a single message to many recipients in one shot
+    chatBroadcast:         (userId, recipients, content, attachment) =>
+      invoke('chat:broadcast', { userId, recipients, content, attachment }),
+    // v4.6 — session management
+    listMySessions:        ()             => invoke('auth:listMySessions'),
+    revokeSession:         (sessionId)    => invoke('auth:revokeSession', { sessionId }),
+    revokeAllOtherSessions:()             => invoke('auth:revokeAllOtherSessions'),
+    completeOnboarding:    ()             => invoke('auth:completeOnboarding'),
     chatReadAttachment:    (attachmentPath) => invoke('chat:readAttachment', attachmentPath),
     chatOpenAttachment:    (attachmentPath) => invoke('chat:openAttachment', attachmentPath),
     // v4.0 voice/video call signalling. The actual media negotiation happens

@@ -52,8 +52,27 @@ function getPasswordStrength(password) {
   };
 }
 
+// Derive a human label from a User-Agent string. Falls back to "Unknown device".
+function deviceLabelFromUA(ua) {
+  if (!ua) return 'Desktop app';
+  const s = String(ua);
+  let os = 'Unknown OS';
+  if (/Windows/i.test(s)) os = 'Windows';
+  else if (/Mac OS X|Macintosh/i.test(s)) os = 'macOS';
+  else if (/Android/i.test(s)) os = 'Android';
+  else if (/iPhone|iPad|iOS/i.test(s)) os = 'iOS';
+  else if (/Linux/i.test(s)) os = 'Linux';
+  let browser = 'browser';
+  if (/Edg\//i.test(s)) browser = 'Edge';
+  else if (/Chrome/i.test(s)) browser = 'Chrome';
+  else if (/Firefox/i.test(s)) browser = 'Firefox';
+  else if (/Safari/i.test(s) && !/Chrome/i.test(s)) browser = 'Safari';
+  else if (/Electron/i.test(s)) return `Desktop app · ${os}`;
+  return `${browser} · ${os}`;
+}
+
 function register(ipcMain, db) {
-  ipcMain.handle('auth:login', async (event, { email, password }) => {
+  ipcMain.handle('auth:login', async (event, { email, password, clientInfo }) => {
     try {
       const user = await db.get(
         `SELECT u.*, r.name as role_name FROM users u
@@ -82,7 +101,28 @@ function register(ipcMain, db) {
       safeUser.fullName = safeUser.full_name || safeUser.fullName;
       safeUser.departmentId = safeUser.department_id || safeUser.departmentId;
       safeUser.isFirstLogin = safeUser.is_first_login === 1;
+      safeUser.onboardingCompleted = (safeUser.onboarding_completed === 1 || safeUser.onboarding_completed === true);
       currentUser = safeUser;
+
+      // v4.6 — record a session row so the user can see (and end) other
+      // active logins later. Best-effort: don't fail login if the table is
+      // missing on a very old DB.
+      try {
+        const sessionId = uuidv4();
+        const sessionToken = uuidv4() + '.' + uuidv4();
+        const ip = clientInfo?.ip || null;
+        const ua = clientInfo?.userAgent || null;
+        const label = clientInfo?.deviceLabel || deviceLabelFromUA(ua);
+        await db.run(
+          `INSERT INTO user_sessions (id, user_id, token, ip_address, user_agent, device_label, created_at, last_seen_at)
+           VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+          [sessionId, user.id, sessionToken, ip, ua, label]
+        );
+        safeUser.sessionId = sessionId;
+        safeUser.sessionToken = sessionToken;
+        currentUser.sessionId = sessionId;
+        currentUser.sessionToken = sessionToken;
+      } catch (e) { console.warn('[AUTH] session record failed:', e.message); }
 
       // Stamp last_login so admins can spot dormant accounts. Best-effort —
       // a tiny ALTER TABLE failure here shouldn't block the login.
@@ -230,12 +270,106 @@ function register(ipcMain, db) {
            VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
           [uuidv4(), currentUser.id, 'LOGOUT', 'User', currentUser.id]
         );
+        // v4.6 — revoke this session row so it disappears from the active list.
+        if (currentUser.sessionId) {
+          try {
+            await db.run(
+              `UPDATE user_sessions SET revoked_at = CURRENT_TIMESTAMP WHERE id = ?`,
+              [currentUser.sessionId]
+            );
+          } catch (_) {}
+        }
       }
       currentUser = null;
       return { success: true };
     } catch (error) {
       console.error('Logout error:', error);
       return { success: false, message: 'Logout failed' };
+    }
+  });
+
+  // v4.6 — Active session listing for the current user. Excludes revoked rows
+  // and rows that haven't been seen in 30 days (stale).
+  ipcMain.handle('auth:listMySessions', async () => {
+    try {
+      if (!currentUser) return { success: false, message: 'Not logged in', data: [] };
+      const rows = await db.all(
+        `SELECT id, ip_address, user_agent, device_label, created_at, last_seen_at
+           FROM user_sessions
+          WHERE user_id = ?
+            AND revoked_at IS NULL
+            AND last_seen_at >= datetime('now', '-30 days')
+          ORDER BY last_seen_at DESC`,
+        [currentUser.id]
+      );
+      const data = rows.map(r => ({
+        ...r,
+        isCurrent: r.id === currentUser.sessionId
+      }));
+      return { success: true, data };
+    } catch (error) {
+      console.error('listMySessions error:', error);
+      return { success: false, message: error.message, data: [] };
+    }
+  });
+
+  // v4.6 — Revoke one specific other session. Will refuse to revoke the caller's
+  // own session (use auth:logout for that).
+  ipcMain.handle('auth:revokeSession', async (event, { sessionId }) => {
+    try {
+      if (!currentUser) return { success: false, message: 'Not logged in' };
+      if (!sessionId) return { success: false, message: 'sessionId required' };
+      if (sessionId === currentUser.sessionId) {
+        return { success: false, message: 'Use logout to end the current session' };
+      }
+      const result = await db.run(
+        `UPDATE user_sessions
+            SET revoked_at = CURRENT_TIMESTAMP
+          WHERE id = ?
+            AND user_id = ?
+            AND revoked_at IS NULL`,
+        [sessionId, currentUser.id]
+      );
+      return { success: true, changes: result?.changes || 0 };
+    } catch (error) {
+      console.error('revokeSession error:', error);
+      return { success: false, message: error.message };
+    }
+  });
+
+  // v4.6 — "Sign out everywhere else" — revoke every other active session.
+  ipcMain.handle('auth:revokeAllOtherSessions', async () => {
+    try {
+      if (!currentUser) return { success: false, message: 'Not logged in' };
+      const result = await db.run(
+        `UPDATE user_sessions
+            SET revoked_at = CURRENT_TIMESTAMP
+          WHERE user_id = ?
+            AND revoked_at IS NULL
+            AND id != COALESCE(?, '')`,
+        [currentUser.id, currentUser.sessionId || '']
+      );
+      return { success: true, revoked: result?.changes || 0 };
+    } catch (error) {
+      console.error('revokeAllOtherSessions error:', error);
+      return { success: false, message: error.message };
+    }
+  });
+
+  // v4.6 — Mark onboarding wizard completed for the current user. Called by
+  // the wizard's Done step so we don't show it again.
+  ipcMain.handle('auth:completeOnboarding', async () => {
+    try {
+      if (!currentUser) return { success: false, message: 'Not logged in' };
+      await db.run(
+        `UPDATE users SET onboarding_completed = 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+        [currentUser.id]
+      );
+      currentUser.onboardingCompleted = true;
+      return { success: true };
+    } catch (error) {
+      console.error('completeOnboarding error:', error);
+      return { success: false, message: error.message };
     }
   });
 

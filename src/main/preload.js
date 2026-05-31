@@ -9,7 +9,7 @@ console.log('[PRELOAD] Loading preload script...');
 function exposeElectronAPI() {
   const api = {
   // Auth
-  login: (email, password) => ipcRenderer.invoke('auth:login', { email, password }),
+  login: (email, password, clientInfo) => ipcRenderer.invoke('auth:login', { email, password, clientInfo }),
   changePassword: (oldPassword, newPassword, confirmPassword) =>
     ipcRenderer.invoke('auth:changePassword', { oldPassword, newPassword, confirmPassword }),
   changePasswordFirstLogin: (newPassword, confirmPassword) =>
@@ -21,6 +21,11 @@ function exposeElectronAPI() {
     ipcRenderer.invoke('auth:createUser', { username, fullName, roleId, departmentId, isLead }),
   resetUserPassword: (userId) => ipcRenderer.invoke('auth:resetUserPassword', { userId }),
   getPasswordRules: () => ipcRenderer.invoke('auth:getPasswordRules'),
+  // v4.6 — sessions + onboarding
+  listMySessions:           () => ipcRenderer.invoke('auth:listMySessions'),
+  revokeSession:    (sessionId) => ipcRenderer.invoke('auth:revokeSession', { sessionId }),
+  revokeAllOtherSessions:   () => ipcRenderer.invoke('auth:revokeAllOtherSessions'),
+  completeOnboarding:       () => ipcRenderer.invoke('auth:completeOnboarding'),
 
   // Attendance
   signIn: (userId) => ipcRenderer.invoke('attendance:signIn', { userId }),
@@ -143,6 +148,8 @@ function exposeElectronAPI() {
   chatGetMessages:       (userId, conversationId, since) => ipcRenderer.invoke('chat:getMessages', { userId, conversationId, since }),
   chatSendMessage:       (userId, conversationId, content, attachment) => ipcRenderer.invoke('chat:sendMessage', { userId, conversationId, content, attachment }),
   chatGetPresence:       (userIds) => ipcRenderer.invoke('chat:getPresence', { userIds }),
+  chatBroadcast: (userId, recipients, content, attachment) =>
+    ipcRenderer.invoke('chat:broadcast', { userId, recipients, content, attachment }),
   chatReadAttachment:    (attachmentPath) => ipcRenderer.invoke('chat:readAttachment', attachmentPath),
   chatOpenAttachment:    (attachmentPath) => ipcRenderer.invoke('chat:openAttachment', attachmentPath),
   // v4.0 voice/video call signalling — relays SDP / ICE between two

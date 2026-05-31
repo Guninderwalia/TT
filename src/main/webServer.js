@@ -206,6 +206,17 @@ function startServer(port = 3002) {
         handlerArgs = args[0];
       }
 
+      // v4.6 — inject the requester's IP into auth:login so the user's session
+      // list shows the actual login IP, not just the browser's UA. The frontend
+      // shim already fills in userAgent.
+      if (channel === 'auth:login' && handlerArgs && typeof handlerArgs === 'object') {
+        const ip = (req.headers['x-forwarded-for'] || '').split(',')[0].trim()
+                || req.ip
+                || req.socket?.remoteAddress
+                || null;
+        handlerArgs.clientInfo = { ...(handlerArgs.clientInfo || {}), ip };
+      }
+
       const result = await handler(mockEvent, handlerArgs);
       res.json(result);
     } catch (error) {

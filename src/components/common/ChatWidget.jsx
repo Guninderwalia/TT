@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import BroadcastComposerModal from './BroadcastComposerModal';
 
 /**
  * ChatWidget
@@ -29,6 +30,8 @@ const EMOJI_SET = [
 function ChatWidget({ user, onUnreadChange, mode = 'floating' }) {
   const [open, setOpen] = useState(false);
   const [view, setView] = useState('conversations'); // 'conversations' | 'new'
+  // v4.6 — broadcast composer modal visibility
+  const [showBroadcast, setShowBroadcast] = useState(false);
   const [conversations, setConversations] = useState([]);
   const [contacts, setContacts] = useState([]);
   const [activeConv, setActiveConv] = useState(null); // { conversationId, other }
@@ -1111,6 +1114,20 @@ function ChatWidget({ user, onUnreadChange, mode = 'floating' }) {
               >
                 New Chat
               </button>
+              {/* v4.6 — Broadcast button. Opens BroadcastComposerModal which
+                  enforces its own permission gating (admin → everyone, lead
+                  → department, employee → individuals only). */}
+              <button
+                onClick={() => setShowBroadcast(true)}
+                title="Send a broadcast message"
+                style={{
+                  padding: '4px 10px', fontSize: '12px', cursor: 'pointer',
+                  borderRadius: '6px', border: '1px solid rgba(255,255,255,0.08)',
+                  background: 'transparent', color: 'inherit'
+                }}
+              >
+                📣 Broadcast
+              </button>
               <button
                 onClick={() => setOpen(false)}
                 style={{
@@ -1676,6 +1693,16 @@ function ChatWidget({ user, onUnreadChange, mode = 'floating' }) {
           </div>
         </div>
       ))}
+
+      {/* v4.6 — Broadcast composer overlay. Lives outside the chat panel so
+          the modal can be opened in any chat mode (floating or header). */}
+      {showBroadcast && (
+        <BroadcastComposerModal
+          user={user}
+          onClose={() => setShowBroadcast(false)}
+          onSent={() => refreshConversations()}
+        />
+      )}
     </>
   );
 }

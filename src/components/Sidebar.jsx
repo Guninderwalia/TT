@@ -4,10 +4,12 @@ import logoImage from '../assets/logo.png';
 import ChangePasswordModal from './common/ChangePasswordModal';
 import HelpGuidesModal from './common/HelpGuidesModal';
 import ThemeToggle from './common/ThemeToggle';
+import SessionManagementPanel from './common/SessionManagementPanel';
 
 function Sidebar({ user, navItems, activeNav, onNavChange, onLogout }) {
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showHelpModal, setShowHelpModal] = useState(false);
+  const [showSessionsModal, setShowSessionsModal] = useState(false);
 
   if (!user) {
     return null;
@@ -84,6 +86,14 @@ function Sidebar({ user, navItems, activeNav, onNavChange, onLogout }) {
           >
             🔐 Password
           </button>
+          <button
+            className="logout-btn"
+            onClick={() => setShowSessionsModal(true)}
+            title="Active Sessions"
+            style={{ flex: 1, fontSize: '12px' }}
+          >
+            🔐 Sessions
+          </button>
           <button className="logout-btn" onClick={onLogout} title="Logout" style={{ flex: 1 }}>
             Logout
           </button>
@@ -116,6 +126,48 @@ function Sidebar({ user, navItems, activeNav, onNavChange, onLogout }) {
         onClose={() => setShowHelpModal(false)}
         roleClass={roleClass}
       />
+
+      {showSessionsModal && (
+        <div
+          className="modal-overlay"
+          onClick={(e) => { if (e.target === e.currentTarget) setShowSessionsModal(false); }}
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            zIndex: 10000
+          }}
+        >
+          <div style={{
+            background: 'var(--bg-2, #1f2937)',
+            color: 'var(--text, #f3f4f6)',
+            padding: '24px 28px',
+            borderRadius: 12,
+            width: 'min(560px, 95vw)',
+            maxHeight: '90vh',
+            overflowY: 'auto',
+            boxShadow: '0 18px 50px rgba(0,0,0,0.45)',
+            border: '1px solid rgba(255,255,255,0.08)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+              <h2 style={{ margin: 0, fontSize: 20 }}>🔐 Account Security</h2>
+              <button
+                onClick={() => setShowSessionsModal(false)}
+                style={{
+                  background: 'transparent', color: 'inherit',
+                  border: '1px solid rgba(255,255,255,0.15)',
+                  borderRadius: 6, padding: '4px 10px', cursor: 'pointer', fontSize: 14
+                }}
+              >
+                ✕
+              </button>
+            </div>
+            <p style={{ margin: '4px 0 14px', fontSize: 12.5, color: 'var(--text-2, #cbd5e1)' }}>
+              Manage devices that are currently signed into your account.
+            </p>
+            <SessionManagementPanel />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

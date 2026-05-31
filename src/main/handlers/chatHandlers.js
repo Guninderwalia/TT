@@ -677,6 +677,186 @@ function register(ipcMain, db) {
       return { success: false, message: error.message };
     }
   });
+
+  // -------------------------------------------------------------------------
+  // v4.6 — Broadcast: send a single message body to many recipients in one
+  // call. Recipient picker formats supported:
+  //   { all: true }                        → every active user except sender
+  //   { departmentIds: ['dept-1', ...] }   → all active users in those depts
+  //   { roleNames:    ['Lead', 'Admin'] }  → all active users with those roles
+  //   { userIds:      ['u1', 'u2', ...] }  → exactly these IDs
+  //   { excludeIds:   ['u3'] }             → applied on top of the above
+  //
+  // Behaviour:
+  //   - Fans out one 1:1 conversation per recipient (creating if needed).
+  //   - Posts the same message into each conversation.
+  //   - Returns counts: { delivered, failed, recipientCount }
+  // -------------------------------------------------------------------------
+  ipcMain.handle('chat:broadcast', async (_event, { userId, recipients, content, attachment } = {}) => {
+    try {
+      if (!userId) return { success: false, message: 'userId required' };
+      const trimmed = String(content || '').trim();
+      if (!trimmed && !attachment) {
+        return { success: false, message: 'Message cannot be empty' };
+      }
+      if (trimmed.length > 4000) {
+        return { success: false, message: 'Message is too long (max 4000 chars)' };
+      }
+      const spec = recipients || {};
+
+      // Resolve the recipient list.
+      const targetIds = new Set();
+      const exclude = new Set([userId, ...((spec.excludeIds || []))]);
+
+      if (spec.all) {
+        const rows = await db.all(`SELECT id FROM users WHERE status = 'active'`);
+        rows.forEach(r => targetIds.add(r.id));
+      } else {
+        if (Array.isArray(spec.userIds) && spec.userIds.length > 0) {
+          spec.userIds.forEach(id => targetIds.add(id));
+        }
+        if (Array.isArray(spec.departmentIds) && spec.departmentIds.length > 0) {
+          const qs = spec.departmentIds.map(() => '?').join(',');
+          const rows = await db.all(
+            `SELECT id FROM users WHERE status = 'active' AND department_id IN (${qs})`,
+            spec.departmentIds
+          );
+          rows.forEach(r => targetIds.add(r.id));
+        }
+        if (Array.isArray(spec.roleNames) && spec.roleNames.length > 0) {
+          const qs = spec.roleNames.map(() => '?').join(',');
+          const rows = await db.all(
+            `SELECT u.id FROM users u JOIN roles r ON r.id = u.role_id
+              WHERE u.status = 'active' AND r.name IN (${qs})`,
+            spec.roleNames
+          );
+          rows.forEach(r => targetIds.add(r.id));
+        }
+      }
+      // Drop the sender + any explicit excludes.
+      exclude.forEach(id => targetIds.delete(id));
+
+      const ids = Array.from(targetIds);
+      if (ids.length === 0) {
+        return { success: false, message: 'No recipients matched' };
+      }
+
+      // Persist the attachment to disk ONCE; we'll reuse the same row for
+      // every recipient so storage stays linear in attachment count, not
+      // recipient count.
+      let attachmentRow = null;
+      if (attachment) {
+        try {
+          if (!attachment.base64 || !attachment.name) {
+            return { success: false, message: 'Attachment is missing data' };
+          }
+          const buf = Buffer.from(attachment.base64, 'base64');
+          if (buf.length > MAX_ATTACHMENT_BYTES) {
+            return { success: false, message: 'Attachment too large (max 10 MB)' };
+          }
+          const fileId = uuidv4();
+          const fullPath = path.join(attachmentsDir(), `${fileId}${safeExt(attachment.name)}`);
+          fs.writeFileSync(fullPath, buf);
+          attachmentRow = {
+            path: fullPath,
+            name: String(attachment.name).slice(0, 255),
+            size: buf.length,
+            mime: String(attachment.mime || 'application/octet-stream').slice(0, 255)
+          };
+        } catch (e) {
+          console.error('[CHAT] broadcast attachment write failed:', e);
+          return { success: false, message: 'Could not save attachment: ' + e.message };
+        }
+      }
+
+      // Sender info for the SSE payload.
+      const sender = await db.get(
+        `SELECT full_name, profile_picture_path FROM users WHERE id = ?`,
+        [userId]
+      );
+
+      let delivered = 0, failed = 0;
+
+      for (const otherId of ids) {
+        try {
+          // Get or create the 1:1 conversation.
+          let conv = await db.get(
+            `SELECT c.id
+               FROM chat_conversations c
+               JOIN chat_participants p1 ON p1.conversation_id = c.id AND p1.user_id = ?
+               JOIN chat_participants p2 ON p2.conversation_id = c.id AND p2.user_id = ?
+              WHERE c.type = 'direct' LIMIT 1`,
+            [userId, otherId]
+          );
+          let conversationId;
+          if (conv) {
+            conversationId = conv.id;
+          } else {
+            conversationId = uuidv4();
+            await db.run(`INSERT INTO chat_conversations (id, type) VALUES (?, 'direct')`, [conversationId]);
+            await db.run(`INSERT INTO chat_participants (id, conversation_id, user_id) VALUES (?, ?, ?)`, [uuidv4(), conversationId, userId]);
+            await db.run(`INSERT INTO chat_participants (id, conversation_id, user_id) VALUES (?, ?, ?)`, [uuidv4(), conversationId, otherId]);
+            broadcast(otherId, 'conversation:new', { conversationId, by: userId });
+          }
+
+          const msgId = uuidv4();
+          const sentAt = new Date().toISOString();
+          await db.run(
+            `INSERT INTO chat_messages (id, conversation_id, sender_id, content, sent_at,
+                                        attachment_path, attachment_name, attachment_size, attachment_mime)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+              msgId, conversationId, userId, trimmed, sentAt,
+              attachmentRow?.path || null,
+              attachmentRow?.name || null,
+              attachmentRow?.size || null,
+              attachmentRow?.mime || null
+            ]
+          );
+          await db.run(
+            `UPDATE chat_conversations SET last_message_at = ? WHERE id = ?`,
+            [sentAt, conversationId]
+          );
+
+          const payload = {
+            id: msgId,
+            conversationId,
+            senderId: userId,
+            senderName: sender ? sender.full_name : 'Unknown',
+            senderPicture: sender ? sender.profile_picture_path : null,
+            content: trimmed,
+            sentAt,
+            attachmentPath: attachmentRow?.path || null,
+            attachmentName: attachmentRow?.name || null,
+            attachmentSize: attachmentRow?.size || null,
+            attachmentMime: attachmentRow?.mime || null,
+            isBroadcast: true
+          };
+          broadcast(otherId, 'message:new', payload);
+          delivered++;
+        } catch (e) {
+          console.error(`[CHAT] broadcast → ${otherId} failed:`, e.message);
+          failed++;
+        }
+      }
+
+      // One audit row for the whole broadcast — no per-recipient body stored.
+      try {
+        await writeAudit(db, userId, {
+          action: 'CHAT_BROADCAST',
+          entityType: 'CHAT_BROADCAST',
+          entityId: `${userId}-${Date.now()}`,
+          oldValue: null,
+          newValue: { recipientCount: ids.length, delivered, failed, hadAttachment: !!attachmentRow, contentLength: trimmed.length }
+        });
+      } catch (_) {}
+
+      return { success: true, delivered, failed, recipientCount: ids.length };
+    } catch (error) {
+      console.error('[CHAT] broadcast error:', error);
+      return { success: false, message: error.message };
+    }
+  });
 }
 
 module.exports = { register, addSubscriber, removeSubscriber, broadcast };

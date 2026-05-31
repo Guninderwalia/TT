@@ -10,6 +10,7 @@ import EmployeeDashboard from './pages/EmployeeDashboard';
 import { ToastContainer } from './components/common/Toast';
 import { applyTheme, getTheme } from './components/common/ThemeToggle';
 import { setOfficeTimezone, syncOfficeTimeFromInternet } from './utils/officeTime';
+import OnboardingWizard from './components/common/OnboardingWizard';
 import './styles/app.css';
 
 // Apply the saved theme BEFORE React renders anything. This is at module
@@ -20,7 +21,7 @@ applyTheme(getTheme());
 // Bump this single constant when packaging a new build. The label is rendered
 // in the bottom-right corner on every screen (incl. login) so it's easy to
 // confirm which version is running. Click the badge to open the About modal.
-const BUILD_VERSION = 'Production v4.5';
+const BUILD_VERSION = 'Production v4.6';
 const APP_DEVELOPER = 'Guninder Ahluwalia';
 const APP_YEAR      = new Date().getFullYear();
 
@@ -485,6 +486,18 @@ function App() {
       )}
       <BuildBadge onClick={() => setShowAbout(true)} />
       {showAbout && <AboutModal onClose={() => setShowAbout(false)} roleClass={roleClass} />}
+
+      {/* v4.6 — First-time onboarding wizard.
+          Shown immediately after a freshly-created user completes their
+          password change. The auth handler returns onboardingCompleted on
+          the user object; existing users were backfilled to 1 by the
+          migration so only brand-new joiners see this. */}
+      {user && user.onboardingCompleted === false && (
+        <OnboardingWizard
+          user={user}
+          onDone={() => setUser(u => u ? { ...u, onboardingCompleted: true } : u)}
+        />
+      )}
     </>
   );
 }

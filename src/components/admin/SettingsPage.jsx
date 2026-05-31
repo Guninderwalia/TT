@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import SessionManagementPanel from '../common/SessionManagementPanel';
 
 /**
  * Admin Settings page — key/value editor for system-wide defaults, plus a
@@ -344,6 +345,11 @@ function SettingsPage({ user }) {
               <code>%APPDATA%\TaskTango\</code> while the app is closed.
             </p>
           </div>
+
+          {/* v4.6 — Active session management — admins can also see this
+              same panel for THEIR account; the same component is mounted
+              for non-admins via the dashboard pages. */}
+          <SessionManagementPanel />
 
           {/* v4.5 — Wipe Test Data ====================================== */}
           <WipeTestDataPanel />
