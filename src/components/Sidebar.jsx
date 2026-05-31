@@ -88,6 +88,22 @@ function Sidebar({ user, navItems, activeNav, onNavChange, onLogout }) {
             Logout
           </button>
         </div>
+
+        {/* Always-visible developer credit at the very bottom of the sidebar.
+            Shown on every dashboard page so users on the web build see who
+            built the app without needing to open About. */}
+        <div style={{
+          marginTop: 4, paddingTop: 10,
+          borderTop: '1px solid rgba(255,255,255,0.06)',
+          textAlign: 'center',
+          fontSize: 10.5,
+          color: 'rgba(255,255,255,0.45)',
+          lineHeight: 1.5,
+          letterSpacing: '0.2px'
+        }}>
+          Designed &amp; developed by<br />
+          <strong style={{ color: 'rgba(255,255,255,0.75)' }}>Guninder Ahluwalia</strong>
+        </div>
       </div>
 
       <ChangePasswordModal

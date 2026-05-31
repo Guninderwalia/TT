@@ -114,6 +114,24 @@ function LoginPage({ onLogin }) {
               {loading ? 'Signing in...' : 'Sign In'}
             </button>
           </form>
+
+          {/* Always-visible developer credit so users on the web build know
+              who's behind the app without needing to open the About dialog. */}
+          <div style={{
+            marginTop: 24, paddingTop: 14,
+            borderTop: '1px solid rgba(255,255,255,0.08)',
+            textAlign: 'center',
+            fontSize: 11,
+            color: 'rgba(255,255,255,0.55)',
+            letterSpacing: '0.3px',
+            lineHeight: 1.6
+          }}>
+            Designed &amp; developed by <strong style={{ color: 'rgba(255,255,255,0.85)' }}>Guninder Ahluwalia</strong>
+            <br />
+            <span style={{ fontFamily: 'Consolas, "Courier New", monospace', fontSize: 10, opacity: 0.7 }}>
+              Production v4.5 · © {new Date().getFullYear()}
+            </span>
+          </div>
         </div>
       </div>
 
