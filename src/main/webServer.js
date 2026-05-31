@@ -217,6 +217,20 @@ function startServer(port = 3002) {
         handlerArgs.clientInfo = { ...(handlerArgs.clientInfo || {}), ip };
       }
 
+      // v4.6.3 — for the session-management handlers, pass the requester's
+      // User-Agent + IP onto the mock event so the handler can lazily create
+      // a session row for users who logged in before the user_sessions table
+      // existed (or before V4.6 deployed).
+      if (channel.startsWith('auth:listMySessions')
+       || channel.startsWith('auth:revokeAllOtherSessions')
+       || channel.startsWith('auth:revokeSession')) {
+        mockEvent.requestInfo = {
+          userAgent: req.headers['user-agent'] || null,
+          ip: (req.headers['x-forwarded-for'] || '').split(',')[0].trim()
+              || req.ip || req.socket?.remoteAddress || null
+        };
+      }
+
       const result = await handler(mockEvent, handlerArgs);
       res.json(result);
     } catch (error) {

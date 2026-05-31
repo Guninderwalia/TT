@@ -122,6 +122,19 @@ function register(ipcMain, db) {
         safeUser.sessionToken = sessionToken;
         currentUser.sessionId = sessionId;
         currentUser.sessionToken = sessionToken;
+        // v4.6.3 — explicit device-detection log line so admins reviewing
+        // the server logs can see exactly what was recognised on each login.
+        console.log(`[AUTH] LOGIN  user=${user.email}  device="${label}"  ip=${ip || 'local'}  ua="${(ua || '').slice(0, 80)}"`);
+        // Also write an enriched audit row that includes the device label
+        // so the audit log UI shows useful context, not just "LOGIN".
+        try {
+          await db.run(
+            `INSERT INTO audit_logs (id, user_id, action, entity_type, entity_id, new_value, timestamp)
+             VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+            [uuidv4(), user.id, 'LOGIN_DEVICE', 'UserSession', sessionId,
+             JSON.stringify({ device: label, ip, sessionId })]
+          );
+        } catch (_) { /* audit is best-effort */ }
       } catch (e) { console.warn('[AUTH] session record failed:', e.message); }
 
       // Stamp last_login so admins can spot dormant accounts. Best-effort —
@@ -300,11 +313,17 @@ function register(ipcMain, db) {
 
   // v4.6 — Active session listing for the current user. Excludes revoked rows
   // and rows that haven't been seen in 30 days (stale).
+  //
+  // v4.6.3 — Lazy backfill: if the caller is identified (via x-user-id) but
+  // has zero session rows — usually because they logged in BEFORE the
+  // user_sessions table existed — synthesise a session row for the
+  // current device on the fly. Next refresh they'll see themselves.
   ipcMain.handle('auth:listMySessions', async (event) => {
     try {
       const userId = callerId(event);
       if (!userId) return { success: false, message: 'Not logged in', data: [] };
-      const rows = await db.all(
+
+      let rows = await db.all(
         `SELECT id, ip_address, user_agent, device_label, created_at, last_seen_at
            FROM user_sessions
           WHERE user_id = ?
@@ -313,6 +332,55 @@ function register(ipcMain, db) {
           ORDER BY last_seen_at DESC`,
         [userId]
       );
+
+      // Backfill — no rows but the caller is clearly logged in. Make one
+      // using whatever request metadata the web server attached.
+      if (rows.length === 0) {
+        const ri = event?.requestInfo || {};
+        const ua = ri.userAgent || null;
+        const ip = ri.ip || null;
+        const label = deviceLabelFromUA(ua);
+        const sessionId = uuidv4();
+        const sessionToken = uuidv4() + '.' + uuidv4();
+        try {
+          await db.run(
+            `INSERT INTO user_sessions (id, user_id, token, ip_address, user_agent, device_label, created_at, last_seen_at)
+             VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+            [sessionId, userId, sessionToken, ip, ua, label]
+          );
+          if (currentUser && currentUser.id === userId) {
+            currentUser.sessionId = sessionId;
+            currentUser.sessionToken = sessionToken;
+          }
+          console.log(`[AUTH] BACKFILL session  user=${userId}  device="${label}"  ip=${ip || 'local'}`);
+          rows = await db.all(
+            `SELECT id, ip_address, user_agent, device_label, created_at, last_seen_at
+               FROM user_sessions
+              WHERE user_id = ?
+                AND revoked_at IS NULL
+              ORDER BY last_seen_at DESC`,
+            [userId]
+          );
+        } catch (e) {
+          console.warn('[AUTH] session backfill failed:', e.message);
+        }
+      } else {
+        // Bump last_seen_at on the row that matches the caller's UA so the
+        // "Last seen" timestamp stays meaningful as they navigate.
+        const ri = event?.requestInfo || {};
+        const ua = ri.userAgent;
+        if (ua) {
+          try {
+            await db.run(
+              `UPDATE user_sessions
+                  SET last_seen_at = CURRENT_TIMESTAMP
+                WHERE user_id = ? AND user_agent = ? AND revoked_at IS NULL`,
+              [userId, ua]
+            );
+          } catch (_) {}
+        }
+      }
+
       const data = rows.map(r => ({
         ...r,
         isCurrent: r.id === currentUser?.sessionId
