@@ -8,552 +8,419 @@
   body {
     font-family: "Calibri", "Segoe UI", Arial, sans-serif;
     font-size: 11pt;
-    line-height: 1.55;
+    line-height: 1.6;
     color: #1f2937;
-    max-width: 820px;
+    max-width: 860px;
     margin: 40px auto;
     padding: 0 32px;
     background: #ffffff;
   }
+  .cover {
+    text-align: center;
+    padding: 40px 0 32px;
+    border-bottom: 4px solid #b45309;
+    margin-bottom: 32px;
+  }
   .role-banner {
-    background: linear-gradient(135deg, #c2410c 0%, #9a3412 100%);
+    background: linear-gradient(135deg, #b45309 0%, #7c2d12 100%);
     color: #ffffff;
-    padding: 4px 14px;
-    border-radius: 12px;
+    padding: 6px 18px;
+    border-radius: 14px;
     display: inline-block;
     font-size: 10pt;
-    font-weight: 600;
-    letter-spacing: 1px;
+    font-weight: 700;
+    letter-spacing: 2px;
     text-transform: uppercase;
-    margin-bottom: 8px;
+    margin-bottom: 14px;
+    box-shadow: 0 2px 6px rgba(180,83,9,0.25);
   }
-  h1 {
-    font-size: 28pt;
-    color: #c2410c;
-    margin: 0 0 4px;
-  }
-  .subtitle {
-    color: #6b7280;
-    font-size: 11pt;
-    margin-bottom: 24px;
-    font-style: italic;
-    border-bottom: 3px solid #c2410c;
-    padding-bottom: 12px;
-  }
-  h2 {
-    font-size: 16pt;
-    color: #c2410c;
-    margin-top: 32px;
-    margin-bottom: 10px;
-    padding-bottom: 4px;
-    border-bottom: 1px solid #cbd5e1;
-  }
-  h3 {
-    font-size: 13pt;
-    color: #7c2d12;
-    margin-top: 22px;
-    margin-bottom: 6px;
-  }
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 12px 0;
-    font-size: 10.5pt;
-  }
-  th {
-    background: #c2410c;
-    color: #ffffff;
-    padding: 9px 12px;
-    text-align: left;
-    font-weight: 600;
-  }
-  td {
-    padding: 9px 12px;
-    border-bottom: 1px solid #e5e7eb;
-    vertical-align: top;
-  }
-  tr:nth-child(even) td { background: #fff7ed; }
-  ol.steps {
-    counter-reset: step;
-    list-style: none;
-    padding: 0;
-    margin: 10px 0;
-  }
+  h1 { font-size: 32pt; color: #b45309; margin: 0 0 6px; letter-spacing: -0.5px; }
+  .subtitle { color: #6b7280; font-size: 12pt; margin: 0 0 8px; font-style: italic; }
+  .version-line { color: #9ca3af; font-size: 10pt; font-family: "Consolas", monospace; letter-spacing: 1px; }
+  h2 { font-size: 18pt; color: #b45309; margin-top: 38px; margin-bottom: 12px; padding-bottom: 6px; border-bottom: 2px solid #fde68a; }
+  h3 { font-size: 14pt; color: #b45309; margin-top: 24px; margin-bottom: 8px; }
+  h4 { font-size: 12pt; color: #92400e; margin: 18px 0 6px; }
+  p { margin: 8px 0 12px; }
+  ul, ol { margin: 8px 0 14px; padding-left: 26px; }
+  li { margin: 5px 0; }
+  table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 10.5pt; }
+  th { background: #b45309; color: #ffffff; padding: 10px 12px; text-align: left; font-weight: 600; font-size: 10.5pt; }
+  td { padding: 9px 12px; border-bottom: 1px solid #e5e7eb; vertical-align: top; }
+  tr:nth-child(even) td { background: #fffbeb; }
+  ol.steps { counter-reset: step; list-style: none; padding: 0; margin: 12px 0; }
   ol.steps li {
     counter-increment: step;
-    padding: 8px 0 8px 38px;
+    padding: 10px 0 10px 44px;
     position: relative;
-    border-bottom: 1px dashed #fed7aa;
+    border-bottom: 1px dashed #fde68a;
   }
   ol.steps li:last-child { border-bottom: none; }
   ol.steps li:before {
     content: counter(step);
-    position: absolute;
-    left: 0;
-    top: 7px;
-    width: 26px;
-    height: 26px;
-    background: #c2410c;
-    color: #ffffff;
+    position: absolute; left: 0; top: 8px;
+    width: 30px; height: 30px;
+    background: #b45309; color: #ffffff;
     border-radius: 50%;
     text-align: center;
-    font-weight: 700;
-    font-size: 11pt;
-    line-height: 26px;
+    font-weight: 700; font-size: 11.5pt; line-height: 30px;
   }
-  .tab-card {
-    border: 1px solid #fed7aa;
-    border-radius: 10px;
-    padding: 16px 20px;
-    margin: 14px 0;
-    background: #fffaf5;
-  }
-  .tab-card h3 {
-    margin-top: 0;
-    color: #c2410c;
-  }
-  .tab-card .icon {
-    font-size: 22pt;
-    margin-right: 8px;
-    vertical-align: -3px;
-  }
-  .section-divider {
-    background: linear-gradient(135deg, #c2410c 0%, #9a3412 100%);
-    color: #ffffff;
-    padding: 8px 18px;
-    border-radius: 6px;
-    font-weight: 700;
-    margin: 30px 0 14px;
-    font-size: 12pt;
-    letter-spacing: 0.5px;
-  }
-  .tip {
-    background: #fff7ed;
-    border-left: 4px solid #f97316;
-    padding: 10px 14px;
-    margin: 12px 0;
-    border-radius: 0 4px 4px 0;
-    font-size: 10.5pt;
-  }
-  .warn {
-    background: #fef3c7;
-    border-left: 4px solid #f59e0b;
-    padding: 10px 14px;
-    margin: 12px 0;
-    border-radius: 0 4px 4px 0;
-    font-size: 10.5pt;
-  }
-  .footer {
-    margin-top: 50px;
-    border-top: 1px solid #d1d5db;
-    padding-top: 12px;
-    color: #6b7280;
-    font-size: 9.5pt;
-    text-align: center;
-  }
-  code {
-    background: #fff7ed;
-    padding: 1px 6px;
-    border-radius: 3px;
-    font-family: "Consolas", "Courier New", monospace;
-    font-size: 10pt;
-    color: #c2410c;
-    font-weight: 600;
-  }
-  /* Workflow steps */
-  .workflow {
-    margin: 16px 0;
-    padding: 16px;
-    background: #fafafa;
-    border: 1px solid #e5e7eb;
-    border-radius: 10px;
-  }
-  .wf-title {
-    font-weight: 700;
-    color: #c2410c;
-    font-size: 12pt;
-    margin-bottom: 10px;
-  }
-  .wf-step {
-    display: flex;
-    align-items: flex-start;
-    padding: 10px 14px;
-    border-radius: 8px;
-    margin: 6px 0;
-    border-left: 6px solid #d1d5db;
-    background: #ffffff;
-  }
-  .wf-step.you {
-    border-left-color: #c2410c;
-    background: #fff7ed;
-  }
-  .wf-step.outcome {
-    border-left-color: #facc15;
-    background: #fffbeb;
-  }
-  .wf-num {
-    width: 32px;
-    height: 32px;
-    background: #9ca3af;
-    color: #ffffff;
-    border-radius: 50%;
-    text-align: center;
-    line-height: 32px;
-    font-weight: 700;
-    margin-right: 14px;
-    flex-shrink: 0;
-  }
-  .wf-step.you .wf-num { background: #c2410c; }
-  .wf-step.outcome .wf-num { background: #facc15; color: #78350f; }
+  .tip { background: #fffbeb; border-left: 4px solid #f59e0b; padding: 10px 14px; margin: 14px 0; border-radius: 0 4px 4px 0; font-size: 10.5pt; }
+  .tip:before { content: "💡 TIP — "; font-weight: 700; color: #92400e; }
+  .example { background: #fef3c7; border-left: 4px solid #d97706; padding: 12px 16px; margin: 14px 0; border-radius: 0 4px 4px 0; font-size: 10.5pt; }
+  .example:before { content: "📘 EXAMPLE — "; font-weight: 700; color: #78350f; display: block; margin-bottom: 4px; }
+  .warn { background: #fee2e2; border-left: 4px solid #dc2626; padding: 10px 14px; margin: 14px 0; border-radius: 0 4px 4px 0; font-size: 10.5pt; }
+  .warn:before { content: "⚠ HEADS UP — "; font-weight: 700; color: #7f1d1d; }
+  .danger { background: #fee2e2; border-left: 4px solid #dc2626; padding: 10px 14px; margin: 14px 0; border-radius: 0 4px 4px 0; font-size: 10.5pt; }
+  .danger:before { content: "🚫 DON'T — "; font-weight: 700; color: #7f1d1d; }
+  code { background: #fef3c7; padding: 2px 6px; border-radius: 3px; font-family: "Consolas", "Courier New", monospace; font-size: 10pt; color: #92400e; font-weight: 600; }
+  kbd { background: #f3f4f6; border: 1px solid #d1d5db; border-bottom-width: 2px; padding: 1px 7px; border-radius: 4px; font-family: "Consolas", monospace; font-size: 9.5pt; color: #1f2937; }
+  .pill { display: inline-block; padding: 2px 9px; border-radius: 10px; font-size: 9.5pt; font-weight: 600; margin-right: 4px; }
+  .pill-green  { background: #d1fae5; color: #065f46; }
+  .pill-amber  { background: #fef3c7; color: #78350f; }
+  .pill-red    { background: #fee2e2; color: #7f1d1d; }
+  .pill-blue   { background: #dbeafe; color: #1e3a8a; }
+  .pill-purple { background: #ede9fe; color: #5b21b6; }
+  .pill-grey   { background: #f3f4f6; color: #374151; }
+  .toc { background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px; padding: 18px 22px; margin: 20px 0 32px; }
+  .toc h3 { margin-top: 0; color: #b45309; }
+  .toc ol { padding-left: 22px; margin: 0; }
+  .toc li { margin: 4px 0; }
+  .toc a { color: #b45309; text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+  .footer { margin-top: 60px; border-top: 2px solid #b45309; padding-top: 16px; color: #4b5563; font-size: 10pt; text-align: center; line-height: 1.7; }
+  .footer strong { color: #b45309; font-size: 11pt; }
+  .footer .small { font-size: 9pt; color: #9ca3af; margin-top: 6px; font-family: "Consolas", monospace; letter-spacing: 0.5px; }
+  .feature-card { border: 1px solid #fde68a; border-radius: 10px; padding: 14px 18px; margin: 12px 0; background: #fffdf7; }
+  .feature-card h4 { margin-top: 0; }
+  .workflow { margin: 16px 0; padding: 16px; background: #fafafa; border: 1px solid #e5e7eb; border-radius: 10px; }
+  .wf-title { font-weight: 700; color: #b45309; font-size: 12pt; margin-bottom: 10px; }
+  .wf-step { display: flex; align-items: flex-start; padding: 10px 14px; border-radius: 8px; margin: 6px 0; border-left: 6px solid #d1d5db; background: #ffffff; }
+  .wf-step.you { border-left-color: #b45309; background: #fffbeb; }
+  .wf-step.outcome { border-left-color: #16a34a; background: #f0fdf4; }
+  .wf-num { width: 32px; height: 32px; background: #9ca3af; color: #ffffff; border-radius: 50%; text-align: center; line-height: 32px; font-weight: 700; margin-right: 14px; flex-shrink: 0; }
+  .wf-step.you .wf-num { background: #b45309; }
+  .wf-step.outcome .wf-num { background: #16a34a; }
   .wf-content { flex: 1; }
-  .wf-actor {
-    font-size: 9pt;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    color: #6b7280;
-    font-weight: 700;
-    margin-bottom: 2px;
-  }
-  .wf-step.you .wf-actor { color: #c2410c; }
-  .wf-action {
-    font-weight: 600;
-    color: #1f2937;
-    margin-bottom: 2px;
-  }
-  .wf-result {
-    font-size: 10pt;
-    color: #6b7280;
-    font-style: italic;
-  }
-  .wf-arrow {
-    text-align: center;
-    font-size: 18pt;
-    color: #9ca3af;
-    line-height: 1;
-    margin: -2px 0;
-  }
+  .wf-actor { font-size: 9pt; text-transform: uppercase; letter-spacing: 1px; color: #6b7280; font-weight: 700; margin-bottom: 2px; }
+  .wf-step.you .wf-actor { color: #b45309; }
 </style>
 </head>
 <body>
 
-<div class="role-banner">Department Lead Edition</div>
-<h1>TaskTango — Department Lead Guide</h1>
-<div class="subtitle">
-  How to manage your team's attendance, approve their leave, review their performance — and handle your own work too. <strong>Updated for Production v3.5.</strong>
+<div class="cover">
+  <span class="role-banner">Department Lead Edition</span>
+  <h1>TaskTango Training Guide</h1>
+  <p class="subtitle">Lead your team confidently — every workflow explained</p>
+  <p class="version-line">Production v4.5 · For team leads &amp; line managers · Updated 2026</p>
 </div>
 
-<!-- =================================================== -->
+<div class="toc">
+  <h3>📑 What's in this guide</h3>
+  <ol>
+    <li><a href="#welcome">What "Lead" means inside TaskTango</a></li>
+    <li><a href="#dashboard">Your lead dashboard explained</a></li>
+    <li><a href="#team-status">Live team status &amp; charts</a></li>
+    <li><a href="#timelog">Team time logs — viewing &amp; sanity-checking</a></li>
+    <li><a href="#leave-approval">Approving leave (single &amp; bulk)</a></li>
+    <li><a href="#performance">Writing performance reviews</a></li>
+    <li><a href="#chat">Chat &amp; calls with your team</a></li>
+    <li><a href="#orgchart">Org Chart for headcount conversations</a></li>
+    <li><a href="#own-stuff">Your own employee tasks (sign in, leave, etc.)</a></li>
+    <li><a href="#etiquette">Leadership etiquette &amp; common pitfalls</a></li>
+    <li><a href="#shortcuts">Keyboard shortcuts</a></li>
+    <li><a href="#faq">FAQ &amp; troubleshooting</a></li>
+  </ol>
+</div>
 
-<h2>🆕 What's New (V10 → V3.5)</h2>
+<h2 id="welcome">1. What "Lead" means inside TaskTango</h2>
+<p>
+  You're a Department Lead if your admin flagged you as <code>is_department_lead = 1</code> and your department has you set as its lead. In TaskTango terms that gives you four extra powers your team members don't have:
+</p>
+<ol>
+  <li><strong>See your whole team's live status</strong> — who's signed in, on break, late, absent, on leave.</li>
+  <li><strong>Approve or reject leave requests</strong> at the first stage (admin still gives final sign-off).</li>
+  <li><strong>Write performance reviews</strong> for the people in your department.</li>
+  <li><strong>View your team's time logs</strong> end-to-end.</li>
+</ol>
 
-<p>A quick tour of what's changed for you since the V10 hotfix line.</p>
+<p>
+  Crucially you are <em>also still an employee</em>: you sign in, you log breaks, you request your own leave. Sections 1–9 of the Employee Training Guide still apply to you for those parts.
+</p>
 
-<h3>Team Analytics on Your Dashboard</h3>
-<p>Three new charts live under <strong>Analytics</strong>, right after the Team Overview tiles:</p>
-<ul>
-  <li><strong>Team Attendance — This Week:</strong> stacked bar showing Present / Absent / Leave per day for your department over the last 7 days.</li>
-  <li><strong>Team Status Today:</strong> doughnut showing today's split of Present / Absent / Leave / Half-day for your team.</li>
-  <li><strong>My Hours — Last 12 Weeks:</strong> a personal line chart of your own hours logged, week by week.</li>
-</ul>
+<div class="tip">
+  You can't approve your <em>own</em> leave request — that's deliberate. The system automatically routes your leave to the admin, skipping the lead step. So request leave like any other employee; admin handles it.
+</div>
 
-<h3>Chat Upgrade</h3>
-<p>The 💬 chat icon moved to the dashboard header next to the 🔔 bell. New features:</p>
-<ul>
-  <li><strong>Desktop notifications</strong> when someone messages you and the chat panel isn't open.</li>
-  <li><strong>Auto-jump</strong> to the most recent unread thread the moment you open chat.</li>
-  <li><strong>Pulsing red badge</strong> over the icon when you have unread messages.</li>
-  <li><strong>Emoji picker</strong> (😊) with the most-used emojis.</li>
-  <li><strong>File attachments</strong> (📎) up to 10 MB — useful for sharing screenshots, shift schedules, training PDFs, etc.</li>
-</ul>
+<h2 id="dashboard">2. Your lead dashboard explained</h2>
+<p>The Lead Dashboard looks similar to the employee one but adds three lead-only widgets at the top:</p>
 
-<h3>Past-Employee Awareness</h3>
-<p>When a team member is offboarded by Admin, they immediately drop off your <em>Team Members</em>, <em>Team Attendance</em>, and approval lists. Any pending leave requests they had for dates after their last working day are auto-cancelled, so you won't see them in your inbox.</p>
+<div class="feature-card">
+  <h4>📊 Today's Team Status (donut chart)</h4>
+  <p>A live donut showing how many of your team are currently <span class="pill pill-green">Working</span>, <span class="pill pill-amber">On Break</span>, <span class="pill pill-blue">Signed Off</span>, <span class="pill pill-red">Absent</span>, <span class="pill pill-purple">On Leave</span>. Refreshes every 30 seconds. Hover any slice to see the count.</p>
+</div>
 
-<h3>Cleaner Performance Review</h3>
-<p>If you have access to Performance Review, the table now has a new <strong>Employee</strong> filter after Department so you can drill into one person at a time. The Last Increment column is gone — that data is on their employee record.</p>
+<div class="feature-card">
+  <h4>👥 Team Member List with presence dots</h4>
+  <p>Below the chart, each team member appears as a row with their photo, name, status pill and the time they signed in. The list is sorted by status — Working at the top, Offline at the bottom — so you can see at a glance who's not at their desk.</p>
+</div>
 
-<h3>Mobile-Friendly Approvals</h3>
-<p>Need to approve a leave from your phone? The whole app is now responsive: at tablet width (≤900 px) the sidebar collapses to a top bar, and at phone width (≤540 px) the nav becomes icon-only and tables scroll horizontally so columns don't overlap.</p>
+<div class="feature-card">
+  <h4>📈 Team Attendance This Week (bar chart)</h4>
+  <p>One bar per weekday, stacked by status. Lets you spot patterns — e.g. "Wednesdays we always have 3 people late". Click any bar to drill in.</p>
+</div>
 
-<h2>Welcome</h2>
+<div class="feature-card">
+  <h4>📅 Upcoming Leaves</h4>
+  <p>Lists every approved leave for your team in the next 30 days. The <strong>📅 Export to Calendar</strong> button gives you an <code>.ics</code> you can drop into Outlook/Google so you always know who's out next month.</p>
+</div>
 
-<p>You wear two hats in TaskTango: <strong>you manage your team</strong>, and you're <strong>still an employee yourself</strong>. The menu is split that way: the top half is your team, the bottom half is for your own attendance, leave, and performance.</p>
+<div class="feature-card">
+  <h4>⏱ My Hours Logged (last 12 weeks)</h4>
+  <p>A personal chart of <em>your own</em> hours — leads need to track their own productivity too.</p>
+</div>
 
+<div class="tip">
+  All these charts use real data from the same DB the admin sees. There is no separate "lead view" of the data — you see the same numbers, just filtered to your team. If the chart looks wrong, the underlying records are wrong; talk to your admin.
+</div>
+
+<h2 id="team-status">3. Live team status &amp; charts</h2>
+
+<h3>Reading the presence dots correctly</h3>
 <table>
-  <thead><tr><th>Your role does this</th><th>Where to do it</th></tr></thead>
+  <thead><tr><th>Colour</th><th>Status</th><th>What that actually means</th><th>What to do</th></tr></thead>
   <tbody>
-    <tr><td>See who's on your team</td><td>Team Members</td></tr>
-    <tr><td>Mark or correct your team's attendance</td><td>Team Attendance</td></tr>
-    <tr><td>Approve or reject leave requests</td><td>Leave Approvals</td></tr>
-    <tr><td>Review your team's performance scores</td><td>Team Performance</td></tr>
-    <tr><td>Log your own working hours</td><td>My Time Logging</td></tr>
-    <tr><td>Sign in / out for your own day</td><td>My Attendance</td></tr>
-    <tr><td>Request your own time off</td><td>My Leave Requests</td></tr>
+    <tr><td><span class="pill pill-green">●</span></td><td>Working</td><td>Signed in, no active break, last action &lt; 10 min ago</td><td>Available to message or call</td></tr>
+    <tr><td><span class="pill pill-amber">●</span></td><td>On Break</td><td>Pressed Start Break, hasn't pressed End Break</td><td>Wait or message — they'll be back</td></tr>
+    <tr><td>🟡</td><td>Idle</td><td>Signed in but no activity for 10+ min</td><td>Maybe AFK or in a meeting</td></tr>
+    <tr><td><span class="pill pill-blue">●</span></td><td>Signed off</td><td>Pressed Sign Out for the day</td><td>Available tomorrow</td></tr>
+    <tr><td><span class="pill pill-red">●</span></td><td>Absent</td><td>Auto-marked because they didn't sign in within 30 min of start</td><td>Check in via chat / phone</td></tr>
+    <tr><td><span class="pill pill-purple">●</span></td><td>On Leave</td><td>Approved leave covers today</td><td>Don't disturb unless emergency</td></tr>
+    <tr><td><span class="pill pill-grey">●</span></td><td>Offline</td><td>No recent activity, no leave, no sign-in</td><td>Status unknown</td></tr>
   </tbody>
 </table>
 
-<h2>Getting Started</h2>
+<div class="example">
+  Ravi opens the Lead Dashboard at 09:45. The donut shows 6 Working, 1 On Break, 2 Absent. He scans the list — Asha and Vikram are red. He opens chat, sees Asha's last message was at 22:00 last night, sends "Morning — everything OK?" Vikram replies in 5 mins: "Sorry boss, train delay, I'll be in by 10:30." Crisis avoided.
+</div>
 
+<h2 id="timelog">4. Team time logs — viewing &amp; sanity-checking</h2>
+<p>Click <strong>Time Logging</strong> in the sidebar. As a lead you see <em>two tabs</em>:</p>
+<ul>
+  <li><strong>My Time</strong> — your own sign-in/break/sign-out controls (same as any employee)</li>
+  <li><strong>Team Logs</strong> — a table of every team member's daily totals</li>
+</ul>
+
+<h3>What the Team Logs table shows</h3>
+<table>
+  <thead><tr><th>Column</th><th>Meaning</th></tr></thead>
+  <tbody>
+    <tr><td>Employee</td><td>Their name + photo</td></tr>
+    <tr><td>Date</td><td>Day of the entry</td></tr>
+    <tr><td>Sign In</td><td>The first sign-in timestamp that day</td></tr>
+    <tr><td>Sign Out</td><td>Latest sign-out, or blank if still in</td></tr>
+    <tr><td>Worked</td><td>Sign-out minus sign-in</td></tr>
+    <tr><td>Break</td><td>Sum of all break gaps that day</td></tr>
+    <tr><td>Net</td><td>Worked minus Break — the actual productive hours</td></tr>
+  </tbody>
+</table>
+
+<h3>Filtering &amp; date range</h3>
+<p>Use the filter row at the top: pick an employee (or "All"), a date range, and press <strong>Apply</strong>. Use <strong>📄 Export to PDF</strong> to grab a printable timesheet — handy at month-end.</p>
+
+<div class="warn">
+  You can <em>view</em> team time-logs but you <em>cannot edit</em> them. Only admins can correct mistakes. If a team member tells you they forgot to sign out, message your admin with the date and the correct time.
+</div>
+
+<h2 id="leave-approval">5. Approving leave (single &amp; bulk)</h2>
+<p>This is where most of your day-to-day lead work happens. Open <strong>Leave Approval Hub</strong> from the sidebar.</p>
+
+<h3>Understanding the queue</h3>
+<p>Every row is a pending request from someone in your department. Columns: Employee · Leave Type · From · To · Days · Reason · Status · Actions. Read the reason carefully — that's your context.</p>
+
+<h3>Single approve / reject</h3>
 <ol class="steps">
-  <li>Open TaskTango and log in with your username and password.</li>
-  <li>You'll land on the <strong>Department Lead Dashboard</strong>. The menu on the left lists everything you can do.</li>
-  <li>The top of the menu is for your team. The bottom (anything starting with "My") is for your own employee actions.</li>
+  <li>Find the row you want to action.</li>
+  <li>Click <strong>Approve</strong> — request is sent up the chain to admin for final approval.</li>
+  <li>Or click <strong>Reject</strong>. A modal asks for a reason — be polite but specific ("Two others already off that week, please pick different dates").</li>
+  <li>The employee gets a 🔔 notification immediately.</li>
 </ol>
 
-<!-- =================================================== -->
+<h3>Bulk approve / reject (new in v4.5)</h3>
+<ol class="steps">
+  <li>Tick the checkbox at the left of each request you want to action together.</li>
+  <li>Or tick the master checkbox in the header to select all.</li>
+  <li>A green action bar appears at the top: <strong>✓ Approve Selected</strong> · <strong>✗ Reject Selected</strong> · <strong>Clear</strong>.</li>
+  <li>Click <strong>Approve Selected</strong> to approve them all in one go.</li>
+  <li>Or <strong>Reject Selected</strong> — one reason is sent to <em>every</em> selected employee, so phrase it carefully.</li>
+</ol>
 
-<div class="section-divider">Part 1 — Managing Your Team</div>
-
-<!-- Dashboard -->
-<div class="tab-card">
-  <h3><span class="icon">🏠</span>Dashboard</h3>
-  <p>A quick summary of your team — who's signed in today, any pending approvals, and team performance at a glance.</p>
-  <p><strong>What to do here:</strong> Use it as a daily check-in. If you see "1 pending approval" jump to Leave Approvals to deal with it.</p>
+<div class="example">
+  Diwali week. Six people from the team have all asked for the same Thursday and Friday off. Mira opens the Hub, ticks the four she can spare, hits <strong>Approve Selected</strong> — done in 5 seconds. For the remaining two she opens each individually and writes a custom rejection: "Sorry Anuj, two leads already approved — can you shift to next Monday?"
 </div>
 
-<!-- Team Members -->
-<div class="tab-card">
-  <h3><span class="icon">👥</span>Team Members</h3>
-  <p>A list of everyone in your department.</p>
-  <p><strong>What to do here:</strong> Check who's on your team, contact details, role, and joining date. You can't edit employee data here — that's an admin task. Use this to look people up.</p>
-</div>
+<h3>What if you're on leave yourself?</h3>
+<p>The system shows you all pending requests <em>except your own</em>. If a critical request comes in while you're away, your admin can step in and approve directly.</p>
 
-<!-- Team Attendance -->
-<div class="tab-card">
-  <h3><span class="icon">📅</span>Team Attendance</h3>
-  <p>A monthly grid showing each team member's attendance, day by day.</p>
-  <p><strong>How to read it:</strong></p>
-  <table>
-    <tr><td><strong>P</strong></td><td>Present</td></tr>
-    <tr><td><strong>A</strong></td><td>Absent</td></tr>
-    <tr><td><strong>L</strong></td><td>Leave (approved)</td></tr>
-    <tr><td><strong>H</strong></td><td>Half-day</td></tr>
-    <tr><td><strong>X</strong></td><td>Public holiday</td></tr>
-    <tr><td>—</td><td>Sunday / non-working day</td></tr>
-  </table>
-  <p><strong>To change someone's status:</strong> Click a cell, choose the correct status, and save. You can also bulk-mark several days at once.</p>
-  <div class="tip">
-    <strong>Tip:</strong> Use this view to spot patterns — frequent absences, late arrivals, etc. — before they become performance issues.
-  </div>
-</div>
-
-<!-- Leave Approvals -->
-<div class="tab-card">
-  <h3><span class="icon">✅</span>Leave Approvals</h3>
-  <p>This is where your team's leave requests come in for you to review.</p>
-  <p><strong>How to handle a request:</strong></p>
-  <ol class="steps">
-    <li>Read the <strong>Employee</strong>, <strong>Leave Type</strong>, <strong>From / To dates</strong>, <strong>Days</strong>, and <strong>Reason</strong> columns.</li>
-    <li>Click the gold <strong>Approve</strong> button if you're happy. The request will be forwarded to admin/MD for final sign-off.</li>
-    <li>Click the red <strong>Reject</strong> button if it can't be granted. You'll be asked to type a brief reason — be respectful; the employee sees it.</li>
-  </ol>
-  <div class="warn">
-    <strong>Important:</strong> Your approval is the <em>first stage</em>. After you approve, it goes to admin for final approval. Until both stages are done, the employee's leave balance isn't deducted.
-  </div>
-</div>
-
-<!-- Team Performance -->
-<div class="tab-card">
-  <h3><span class="icon">📊</span>Team Performance</h3>
-  <p>Performance scores for everyone in your department.</p>
-  <p><strong>What you see:</strong> Each team member has an overall score out of 100, broken into six metrics: Attendance, Punctuality, Consistency, Lateness, Manager Rating, and Skills. Green ≥ 80, Yellow 60–79, Red below 60.</p>
-  <p><strong>What you can do here:</strong></p>
-  <ul>
-    <li>Open someone's profile to see the detail behind their score.</li>
-    <li>Use the <strong>Review</strong> button to give them a star rating and written comments — this is the "Manager Rating" used in their overall score.</li>
-    <li>Use the <strong>Skills</strong> button to rate them on individual skills (communication, teamwork, etc.). Skill ratings drive 40% of their overall score.</li>
-  </ul>
-  <div class="tip">
-    <strong>Why this matters:</strong> Skills and Manager Rating together are 60% of the score. If you don't fill these in, your team members will appear to underperform — even if their attendance is perfect.
-  </div>
-</div>
-
-<!-- =================================================== -->
-
-<div class="section-divider">Part 2 — Your Own Account</div>
-
-<!-- My Time Logging -->
-<div class="tab-card">
-  <h3><span class="icon">⏰</span>My Time Logging</h3>
-  <p>Same as any employee: record when you started, when you broke, and when you finished each working day.</p>
-  <p>The system uses these entries to calculate your own Consistency and Lateness scores.</p>
-</div>
-
-<!-- My Attendance -->
-<div class="tab-card">
-  <h3><span class="icon">📅</span>My Attendance</h3>
-  <p>Sign In when you arrive, Sign Out when you leave. Just like any employee.</p>
-  <div class="tip">
-    Signing in here also automatically fills your Start Time in My Time Logging, so you don't have to enter it twice.
-  </div>
-</div>
-
-<!-- My Leave Requests -->
-<div class="tab-card">
-  <h3><span class="icon">🌴</span>My Leave Requests</h3>
-  <p>Submit your own time off. As a Lead, your request goes straight to admin/MD for approval (skipping the first lead-approval step, since you're it).</p>
-  <p><strong>How:</strong> Pick dates, choose leave type, write a reason, click Submit. Your remaining balance appears at the top.</p>
-</div>
-
-<!-- My Performance -->
-<div class="tab-card">
-  <h3><span class="icon">📈</span>My Performance</h3>
-  <p>Your own overall score, broken down the same way as your team members'.</p>
-</div>
-
-<!-- =================================================== -->
-
-<h2>Workflows — How Things Actually Flow</h2>
-
-<p>These show who does what, in what order. <strong>Your</strong> steps are highlighted in <span style="color:#c2410c; font-weight:700;">orange</span>. Steps done by other people are in grey.</p>
-
-<!-- LEAVE APPROVAL WORKFLOW -->
+<h3>The full approval workflow</h3>
 <div class="workflow">
-  <div class="wf-title">✅ Leave Approval — Your Role is Stage 2</div>
+  <div class="wf-title">From employee → final approval</div>
   <div class="wf-step">
     <div class="wf-num">1</div>
     <div class="wf-content">
       <div class="wf-actor">Employee</div>
-      <div class="wf-action">Submits a leave request with dates, leave type, and a reason</div>
-      <div class="wf-result">It lands in your Leave Approvals queue</div>
+      <div>Submits leave request via My Leave page</div>
     </div>
   </div>
-  <div class="wf-arrow">↓</div>
   <div class="wf-step you">
     <div class="wf-num">2</div>
     <div class="wf-content">
-      <div class="wf-actor">You — Department Lead</div>
-      <div class="wf-action">Open Leave Approvals · Read the Reason · click Approve or Reject (with a reason)</div>
-      <div class="wf-result">Approve → forwarded to admin · Reject → employee sees your reason</div>
+      <div class="wf-actor">You (Lead)</div>
+      <div>Review in Approval Hub → click <strong>Approve</strong> or <strong>Reject</strong></div>
     </div>
   </div>
-  <div class="wf-arrow">↓</div>
   <div class="wf-step">
     <div class="wf-num">3</div>
     <div class="wf-content">
-      <div class="wf-actor">Admin / MD</div>
-      <div class="wf-action">Final sign-off</div>
-      <div class="wf-result">This is the step that actually deducts the employee's balance</div>
+      <div class="wf-actor">Admin</div>
+      <div>Sees "Lead approved" badge in the Final queue; clicks Approve to deduct days from balance and post the calendar event</div>
     </div>
   </div>
-  <div class="wf-arrow">↓</div>
   <div class="wf-step outcome">
     <div class="wf-num">✓</div>
     <div class="wf-content">
-      <div class="wf-actor">Result</div>
-      <div class="wf-action">Leave approved · attendance auto-marked · balance deducted</div>
-      <div class="wf-result">Employee sees "Approved" status</div>
+      <div class="wf-actor">Outcome</div>
+      <div>Employee gets a green-tick notification; days appear on Attendance calendar as <span class="pill pill-purple">On Leave</span></div>
     </div>
   </div>
 </div>
 
-<!-- QUARTERLY PERFORMANCE REVIEW WORKFLOW -->
-<div class="workflow">
-  <div class="wf-title">📊 Quarterly Performance Review of Your Team</div>
-  <div class="wf-step you">
-    <div class="wf-num">1</div>
-    <div class="wf-content">
-      <div class="wf-actor">You — open Team Performance</div>
-      <div class="wf-action">Review each person's overall score and the six metric breakdown</div>
-      <div class="wf-result">Look for red/yellow rows that need attention</div>
-    </div>
-  </div>
-  <div class="wf-arrow">↓</div>
-  <div class="wf-step you">
-    <div class="wf-num">2</div>
-    <div class="wf-content">
-      <div class="wf-actor">You — click Skills on a team member</div>
-      <div class="wf-action">Rate them 1–5 on each predefined skill</div>
-      <div class="wf-result">Drives 40% of their overall score</div>
-    </div>
-  </div>
-  <div class="wf-arrow">↓</div>
-  <div class="wf-step you">
-    <div class="wf-num">3</div>
-    <div class="wf-content">
-      <div class="wf-actor">You — click Review on the same team member</div>
-      <div class="wf-action">Give a 1–5 star rating and written comments</div>
-      <div class="wf-result">Drives 20% of their overall score</div>
-    </div>
-  </div>
-  <div class="wf-arrow">↓</div>
-  <div class="wf-step outcome">
-    <div class="wf-num">✓</div>
-    <div class="wf-content">
-      <div class="wf-actor">Result</div>
-      <div class="wf-action">Team member's overall score updates immediately</div>
-      <div class="wf-result">They see the new score on their own My Performance page</div>
-    </div>
-  </div>
+<h2 id="performance">6. Writing performance reviews</h2>
+<p>Open <strong>Performance Reviews</strong> from the sidebar. You'll see a list of your team members with their last review date.</p>
+
+<h3>Creating a review</h3>
+<ol class="steps">
+  <li>Click <strong>+ New Review</strong> next to the employee.</li>
+  <li>Pick the <strong>review period</strong> (e.g. Jan–Jun 2026).</li>
+  <li>For each scoring category, pick a number from 1 to 5. See the separate <em>Performance Review Scoring Guide</em> for what each score means.</li>
+  <li>Write <strong>Strengths</strong> — be specific. "Delivered the Razorpay migration two weeks early" beats "good worker".</li>
+  <li>Write <strong>Areas to improve</strong> — frame as growth, not blame.</li>
+  <li>Write <strong>Overall comments</strong> — the summary the employee will remember.</li>
+  <li>Click <strong>Save Review</strong>.</li>
+</ol>
+
+<h3>What the employee sees</h3>
+<p>Their <strong>My Performance</strong> page now lists this review. They can read every category, see their overall score (e.g. "4.2 / 5") and download a PDF that includes:</p>
+<ul>
+  <li>Their name and the review period</li>
+  <li>Your name as their <strong>Team Lead</strong> (both in the row and as the signature line — fixed in v4.5)</li>
+  <li>Every category score and your comments</li>
+  <li>A clean signature block for both of you to sign if needed for HR records</li>
+</ul>
+
+<div class="tip">
+  Do reviews face-to-face. Use the chat call (audio or video) to talk through scores before they go on the record. People accept feedback far better in conversation than as a sudden PDF.
 </div>
 
-<!-- YOUR OWN LEAVE REQUEST WORKFLOW -->
-<div class="workflow">
-  <div class="wf-title">🌴 Submitting Your OWN Leave Request (shorter than employees')</div>
-  <div class="wf-step you">
-    <div class="wf-num">1</div>
-    <div class="wf-content">
-      <div class="wf-actor">You — open My Leave Requests</div>
-      <div class="wf-action">Pick dates, leave type, write a reason, click Submit</div>
-      <div class="wf-result">Because you're a Lead, the request <strong>skips</strong> the lead-approval stage</div>
-    </div>
-  </div>
-  <div class="wf-arrow">↓</div>
-  <div class="wf-step">
-    <div class="wf-num">2</div>
-    <div class="wf-content">
-      <div class="wf-actor">Admin / MD</div>
-      <div class="wf-action">Approves or rejects directly</div>
-      <div class="wf-result">There's no separate first-stage approval for you</div>
-    </div>
-  </div>
-  <div class="wf-arrow">↓</div>
-  <div class="wf-step outcome">
-    <div class="wf-num">✓</div>
-    <div class="wf-content">
-      <div class="wf-actor">Result</div>
-      <div class="wf-action">Approved → your balance deducts, attendance marked as Leave</div>
-    </div>
-  </div>
+<div class="danger">
+  Don't score everyone 5/5 to keep the peace. It dilutes the system for the team members who genuinely deserve it. A spread of 3–5 across a team is healthy.
 </div>
 
-<h2>Daily Habits That Make You a Great Lead</h2>
+<h2 id="chat">7. Chat &amp; calls with your team</h2>
+<p>Same chat module as employees (see the Employee Guide for the basics), but as a lead you'll lean on it more:</p>
 
+<h3>Practical lead chat patterns</h3>
+<ul>
+  <li><strong>Morning check-in</strong> — quick "good morning" in each thread; presence dot tells you who's at the desk before you message.</li>
+  <li><strong>Sprint stand-ups</strong> — start a video call from the chat thread; minimize the call so you can still see your charts.</li>
+  <li><strong>1:1s</strong> — schedule weekly; use video calls.</li>
+  <li><strong>File hand-off</strong> — drag a PDF into the chat attachment button.</li>
+</ul>
+
+<h3>If someone's status is wrong</h3>
+<p>Presence is computed from real DB events (sign-in, break, sign-out). If someone shows Working but they've actually left the office without signing out, the auto-sign-out cron at 23:00 will correct it. For the dot to update <em>during the day</em>, they need to sign out themselves.</p>
+
+<h2 id="orgchart">8. Org Chart for headcount conversations</h2>
+<p>Open <strong>Org Chart</strong> from the sidebar. You'll see the full company as a tree, with photos for those who've uploaded one.</p>
+<ul>
+  <li><strong>Zoom + / −</strong> to fit on screen.</li>
+  <li><strong>Drag the empty space</strong> to pan.</li>
+  <li><strong>Export to PDF</strong> for the office wall or board pack.</li>
+</ul>
+
+<div class="tip">
+  When negotiating with admin for an extra headcount in your team, export the Org Chart PDF and bring it to the meeting. Visual headcount conversations are far more persuasive than spreadsheets.
+</div>
+
+<h2 id="own-stuff">9. Your own employee tasks</h2>
+<p>You are <em>also</em> an employee. Every section in the Employee Training Guide applies to you for your own activity:</p>
+<ul>
+  <li>Sign in / sign out (Quick chip in header)</li>
+  <li>Log breaks on the Time Logging page</li>
+  <li>Submit your own leave (routes straight to admin, skipping the lead step)</li>
+  <li>Read your own performance reviews (your admin writes yours)</li>
+  <li>Download your own HR documents</li>
+  <li>Keep your own profile completeness ring green</li>
+</ul>
+
+<h2 id="etiquette">10. Leadership etiquette &amp; common pitfalls</h2>
+
+<div class="feature-card">
+  <h4>✓ Do</h4>
+  <ul>
+    <li>Reply to leave requests within 24 hours — bottlenecks demoralise the team.</li>
+    <li>Use the bulk approve only for clear-cut cases. If a leave overlaps with a sprint deadline, decide individually.</li>
+    <li>Document tough conversations in the chat — the timestamp protects everyone.</li>
+    <li>Run a quick "team status" check every morning at 09:30 to spot anyone red.</li>
+  </ul>
+</div>
+
+<div class="feature-card">
+  <h4>✗ Don't</h4>
+  <ul>
+    <li>Don't approve everyone's leave for the same week without checking — you'll end up with skeleton cover.</li>
+    <li>Don't write performance reviews in haste 5 minutes before the deadline — the employee will remember every word.</li>
+    <li>Don't share screenshots of presence dots outside the team — that's effectively private HR data.</li>
+    <li>Don't try to edit team time logs by going through Settings — that's an admin path; ask them.</li>
+  </ul>
+</div>
+
+<h2 id="shortcuts">11. Keyboard shortcuts</h2>
 <table>
-  <thead><tr><th style="width:40px">#</th><th>Habit</th><th>Why it matters</th></tr></thead>
+  <thead><tr><th>Shortcut</th><th>What it does</th></tr></thead>
   <tbody>
-    <tr><td>1</td><td>Check Leave Approvals every morning</td><td>Requests sitting for days frustrate your team and hold up payroll.</td></tr>
-    <tr><td>2</td><td>Review Team Attendance once a week</td><td>Spot absence patterns early.</td></tr>
-    <tr><td>3</td><td>Rate skills and write a Manager Review once a quarter</td><td>These are 60% of your team's performance scores — don't leave them blank.</td></tr>
-    <tr><td>4</td><td>Use the Reason field thoughtfully when rejecting leave</td><td>The employee sees it. "Critical project week" is more useful than "no".</td></tr>
-    <tr><td>5</td><td>Do your own Sign In / Out and Time Logging</td><td>Leading by example. Your numbers feed your own performance review.</td></tr>
+    <tr><td><kbd>Esc</kbd></td><td>Close the open modal/dialog</td></tr>
+    <tr><td><kbd>Ctrl</kbd> + <kbd>S</kbd></td><td>Save the form you're editing (e.g. submit a review)</td></tr>
+    <tr><td><kbd>Ctrl</kbd> + <kbd>/</kbd></td><td>Show shortcut help</td></tr>
   </tbody>
 </table>
 
-<!-- =================================================== -->
+<h2 id="faq">12. FAQ &amp; troubleshooting</h2>
 
-<h2>Frequently Asked Questions</h2>
+<h4>Q: A team member says their leave balance is wrong</h4>
+<p>Ask them to open Leave Requests once — that re-seeds the balance row. If still off, escalate to admin (they can edit balances in the Employee Manager).</p>
 
-<h3>I clicked Approve but nothing seems to have happened.</h3>
-<p>You should see a confirmation alert pop up. If you don't, the request couldn't be forwarded — usually because there is no active admin or MD account in the system. Check with IT.</p>
+<h4>Q: My Approval Hub is empty but I know there are pending requests</h4>
+<p>You only see requests for <em>your</em> department. Requests from other teams are invisible to you. Also: your own requests don't appear (admin handles those).</p>
 
-<h3>Can I approve someone outside my department?</h3>
-<p>No. Leave Approvals only shows requests from your own department. If you need to cover for another lead, ask an admin to reassign.</p>
+<h4>Q: I approved a leave but admin hasn't actioned it</h4>
+<p>Approved-by-lead requests sit in the admin's Final queue. Send the admin a chat nudge — if they've forgotten, one click clears it.</p>
 
-<h3>What happens after I approve?</h3>
-<p>The request moves to the admin's queue. Until they approve it, the employee's leave balance is NOT deducted. Once admin approves, the balance is deducted and the days are auto-marked as Leave in attendance.</p>
+<h4>Q: The team status chart says someone is Working but they're not in the office</h4>
+<p>They signed in remotely. TaskTango doesn't enforce a location check. If your company is strict about on-site presence, raise that with admin — they can enable IP whitelisting in Settings.</p>
 
-<h3>I rejected a request by mistake. Can I undo it?</h3>
-<p>Not directly — the employee will need to resubmit. Send them a quick message so they know to submit again.</p>
+<h4>Q: Can I assign someone else to write a review on my behalf?</h4>
+<p>Not in v4.5. Admins can write reviews for any team. If you're going on a long leave, ask admin to cover.</p>
 
-<h3>How do I rate skills?</h3>
-<p>Open Team Performance, click the <strong>Skills</strong> button next to a team member's name, and rate them 1–5 on each predefined skill. Save when done.</p>
+<h4>Q: Can I see the org chart for a different department?</h4>
+<p>Yes — the chart shows the whole company. You can zoom into any branch.</p>
 
-<h3>Someone's overall score is red but I think they're doing fine.</h3>
-<p>Open their record and look at each metric. The most common cause is missing data — they may not have skill ratings, a manager review, or time logs yet. Fill those in and the score will rise.</p>
+<h4>Q: How do I know which version I'm on?</h4>
+<p>Bottom-right badge: <strong>Build Production v4.5</strong>. Click it for the About box.</p>
 
 <div class="footer">
-  TaskTango — Department Lead Training Guide
+  <strong>TaskTango — Department Lead Training Guide</strong><br>
+  Designed, developed and written by <strong>Guninder Ahluwalia</strong>
+  <div class="small">Production v4.5 · © 2026 · All rights reserved</div>
 </div>
 
 </body>

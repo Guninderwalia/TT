@@ -8,500 +8,522 @@
   body {
     font-family: "Calibri", "Segoe UI", Arial, sans-serif;
     font-size: 11pt;
-    line-height: 1.55;
+    line-height: 1.6;
     color: #1f2937;
-    max-width: 820px;
+    max-width: 860px;
     margin: 40px auto;
     padding: 0 32px;
     background: #ffffff;
   }
+  .cover {
+    text-align: center;
+    padding: 40px 0 32px;
+    border-bottom: 4px solid #047857;
+    margin-bottom: 32px;
+  }
   .role-banner {
-    background: linear-gradient(135deg, #047857 0%, #065f46 100%);
+    background: linear-gradient(135deg, #047857 0%, #064e3b 100%);
     color: #ffffff;
-    padding: 4px 14px;
-    border-radius: 12px;
+    padding: 6px 18px;
+    border-radius: 14px;
     display: inline-block;
     font-size: 10pt;
-    font-weight: 600;
-    letter-spacing: 1px;
+    font-weight: 700;
+    letter-spacing: 2px;
     text-transform: uppercase;
-    margin-bottom: 8px;
+    margin-bottom: 14px;
+    box-shadow: 0 2px 6px rgba(4,120,87,0.25);
   }
   h1 {
-    font-size: 28pt;
+    font-size: 32pt;
     color: #047857;
-    margin: 0 0 4px;
+    margin: 0 0 6px;
+    letter-spacing: -0.5px;
   }
   .subtitle {
     color: #6b7280;
-    font-size: 11pt;
-    margin-bottom: 24px;
+    font-size: 12pt;
+    margin: 0 0 8px;
     font-style: italic;
-    border-bottom: 3px solid #047857;
-    padding-bottom: 12px;
+  }
+  .version-line {
+    color: #9ca3af;
+    font-size: 10pt;
+    font-family: "Consolas", monospace;
+    letter-spacing: 1px;
   }
   h2 {
-    font-size: 16pt;
+    font-size: 18pt;
     color: #047857;
-    margin-top: 32px;
-    margin-bottom: 10px;
-    padding-bottom: 4px;
-    border-bottom: 1px solid #cbd5e1;
+    margin-top: 38px;
+    margin-bottom: 12px;
+    padding-bottom: 6px;
+    border-bottom: 2px solid #a7f3d0;
   }
   h3 {
-    font-size: 13pt;
-    color: #064e3b;
-    margin-top: 22px;
-    margin-bottom: 6px;
+    font-size: 14pt;
+    color: #047857;
+    margin-top: 24px;
+    margin-bottom: 8px;
   }
+  h4 {
+    font-size: 12pt;
+    color: #065f46;
+    margin: 18px 0 6px;
+  }
+  p { margin: 8px 0 12px; }
+  ul, ol { margin: 8px 0 14px; padding-left: 26px; }
+  li { margin: 5px 0; }
   table {
     width: 100%;
     border-collapse: collapse;
-    margin: 12px 0;
+    margin: 14px 0;
     font-size: 10.5pt;
   }
   th {
     background: #047857;
     color: #ffffff;
-    padding: 9px 12px;
+    padding: 10px 12px;
     text-align: left;
     font-weight: 600;
+    font-size: 10.5pt;
   }
   td {
     padding: 9px 12px;
     border-bottom: 1px solid #e5e7eb;
     vertical-align: top;
   }
-  tr:nth-child(even) td { background: #f8fafc; }
-  ol.steps {
-    counter-reset: step;
-    list-style: none;
-    padding: 0;
-    margin: 10px 0;
-  }
+  tr:nth-child(even) td { background: #f0fdf4; }
+  ol.steps { counter-reset: step; list-style: none; padding: 0; margin: 12px 0; }
   ol.steps li {
     counter-increment: step;
-    padding: 8px 0 8px 38px;
+    padding: 10px 0 10px 44px;
     position: relative;
-    border-bottom: 1px dashed #e5e7eb;
+    border-bottom: 1px dashed #d1fae5;
   }
   ol.steps li:last-child { border-bottom: none; }
   ol.steps li:before {
     content: counter(step);
     position: absolute;
-    left: 0;
-    top: 7px;
-    width: 26px;
-    height: 26px;
+    left: 0; top: 8px;
+    width: 30px; height: 30px;
     background: #047857;
     color: #ffffff;
     border-radius: 50%;
     text-align: center;
     font-weight: 700;
-    font-size: 11pt;
-    line-height: 26px;
+    font-size: 11.5pt;
+    line-height: 30px;
   }
-  .tab-card {
-    border: 1px solid #d1d5db;
-    border-radius: 10px;
-    padding: 16px 20px;
-    margin: 14px 0;
-    background: #fafafa;
-  }
-  .tab-card h3 {
-    margin-top: 0;
-    color: #047857;
-  }
-  .tab-card .icon {
-    font-size: 22pt;
-    margin-right: 8px;
-    vertical-align: -3px;
-  }
-  .tip {
-    background: #ecfdf5;
-    border-left: 4px solid #10b981;
-    padding: 10px 14px;
-    margin: 12px 0;
-    border-radius: 0 4px 4px 0;
-    font-size: 10.5pt;
-  }
-  .warn {
-    background: #fef3c7;
-    border-left: 4px solid #f59e0b;
-    padding: 10px 14px;
-    margin: 12px 0;
-    border-radius: 0 4px 4px 0;
-    font-size: 10.5pt;
-  }
-  .footer {
-    margin-top: 50px;
-    border-top: 1px solid #d1d5db;
-    padding-top: 12px;
-    color: #6b7280;
-    font-size: 9.5pt;
-    text-align: center;
-  }
-  code {
-    background: #ecfdf5;
-    padding: 1px 6px;
-    border-radius: 3px;
-    font-family: "Consolas", "Courier New", monospace;
-    font-size: 10pt;
-    color: #047857;
-    font-weight: 600;
-  }
-  /* Workflow steps */
-  .workflow {
-    margin: 16px 0;
-    padding: 16px;
-    background: #fafafa;
-    border: 1px solid #e5e7eb;
-    border-radius: 10px;
-  }
-  .wf-title {
-    font-weight: 700;
-    color: #047857;
-    font-size: 12pt;
-    margin-bottom: 10px;
-  }
-  .wf-step {
-    display: flex;
-    align-items: flex-start;
-    padding: 10px 14px;
-    border-radius: 8px;
-    margin: 6px 0;
-    border-left: 6px solid #d1d5db;
-    background: #ffffff;
-  }
-  .wf-step.you {
-    border-left-color: #047857;
-    background: #ecfdf5;
-  }
-  .wf-step.outcome {
-    border-left-color: #facc15;
-    background: #fffbeb;
-  }
-  .wf-num {
-    width: 32px;
-    height: 32px;
-    background: #9ca3af;
-    color: #ffffff;
-    border-radius: 50%;
-    text-align: center;
-    line-height: 32px;
-    font-weight: 700;
-    margin-right: 14px;
-    flex-shrink: 0;
-  }
-  .wf-step.you .wf-num { background: #047857; }
-  .wf-step.outcome .wf-num { background: #facc15; color: #78350f; }
-  .wf-content { flex: 1; }
-  .wf-actor {
-    font-size: 9pt;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    color: #6b7280;
-    font-weight: 700;
-    margin-bottom: 2px;
-  }
-  .wf-step.you .wf-actor { color: #047857; }
-  .wf-action {
-    font-weight: 600;
-    color: #1f2937;
-    margin-bottom: 2px;
-  }
-  .wf-result {
-    font-size: 10pt;
-    color: #6b7280;
-    font-style: italic;
-  }
-  .wf-arrow {
-    text-align: center;
-    font-size: 18pt;
-    color: #9ca3af;
-    line-height: 1;
-    margin: -2px 0;
-  }
+  .tip { background: #f0fdfa; border-left: 4px solid #14b8a6; padding: 10px 14px; margin: 14px 0; border-radius: 0 4px 4px 0; font-size: 10.5pt; }
+  .tip:before { content: "💡 TIP — "; font-weight: 700; color: #0f766e; }
+  .example { background: #fffbeb; border-left: 4px solid #f59e0b; padding: 12px 16px; margin: 14px 0; border-radius: 0 4px 4px 0; font-size: 10.5pt; }
+  .example:before { content: "📘 EXAMPLE — "; font-weight: 700; color: #92400e; display: block; margin-bottom: 4px; }
+  .warn { background: #fef3c7; border-left: 4px solid #f59e0b; padding: 10px 14px; margin: 14px 0; border-radius: 0 4px 4px 0; font-size: 10.5pt; }
+  .warn:before { content: "⚠ HEADS UP — "; font-weight: 700; color: #78350f; }
+  .danger { background: #fee2e2; border-left: 4px solid #dc2626; padding: 10px 14px; margin: 14px 0; border-radius: 0 4px 4px 0; font-size: 10.5pt; }
+  .danger:before { content: "🚫 DON'T — "; font-weight: 700; color: #7f1d1d; }
+  code { background: #ecfdf5; padding: 2px 6px; border-radius: 3px; font-family: "Consolas", "Courier New", monospace; font-size: 10pt; color: #065f46; font-weight: 600; }
+  kbd { background: #f3f4f6; border: 1px solid #d1d5db; border-bottom-width: 2px; padding: 1px 7px; border-radius: 4px; font-family: "Consolas", monospace; font-size: 9.5pt; color: #1f2937; }
+  .pill { display: inline-block; padding: 2px 9px; border-radius: 10px; font-size: 9.5pt; font-weight: 600; margin-right: 4px; }
+  .pill-green  { background: #d1fae5; color: #065f46; }
+  .pill-amber  { background: #fef3c7; color: #78350f; }
+  .pill-red    { background: #fee2e2; color: #7f1d1d; }
+  .pill-blue   { background: #dbeafe; color: #1e3a8a; }
+  .pill-purple { background: #ede9fe; color: #5b21b6; }
+  .pill-grey   { background: #f3f4f6; color: #374151; }
+  .toc { background: #f0fdf4; border: 1px solid #a7f3d0; border-radius: 10px; padding: 18px 22px; margin: 20px 0 32px; }
+  .toc h3 { margin-top: 0; color: #047857; }
+  .toc ol { padding-left: 22px; margin: 0; }
+  .toc li { margin: 4px 0; }
+  .toc a { color: #047857; text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+  .footer { margin-top: 60px; border-top: 2px solid #047857; padding-top: 16px; color: #4b5563; font-size: 10pt; text-align: center; line-height: 1.7; }
+  .footer strong { color: #047857; font-size: 11pt; }
+  .footer .small { font-size: 9pt; color: #9ca3af; margin-top: 6px; font-family: "Consolas", monospace; letter-spacing: 0.5px; }
+  .feature-card { border: 1px solid #d1fae5; border-radius: 10px; padding: 14px 18px; margin: 12px 0; background: #fafffe; }
+  .feature-card h4 { margin-top: 0; }
+  .dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; border: 2px solid #ffffff; box-shadow: 0 0 0 1px #d1d5db; }
+  .dot-working { background: #10b981; }
+  .dot-break   { background: #f59e0b; }
+  .dot-idle    { background: #fde047; }
+  .dot-off     { background: #3b82f6; }
+  .dot-absent  { background: #ef4444; }
+  .dot-leave   { background: #a855f7; }
+  .dot-offline { background: #9ca3af; }
 </style>
 </head>
 <body>
 
-<div class="role-banner">Employee Edition</div>
-<h1>TaskTango — Your Quick Guide</h1>
-<div class="subtitle">
-  Everything you need to know to log time, request leave, and track your own performance. <strong>Updated for Production v3.5.</strong>
+<div class="cover">
+  <span class="role-banner">Employee Edition</span>
+  <h1>TaskTango Training Guide</h1>
+  <p class="subtitle">Everything you need to know — written for first-time users</p>
+  <p class="version-line">Production v4.5 · For employees · Updated 2026</p>
 </div>
 
-<!-- =================================================== -->
+<div class="toc">
+  <h3>📑 What's in this guide</h3>
+  <ol>
+    <li><a href="#welcome">Welcome — what TaskTango is for</a></li>
+    <li><a href="#login">Logging in for the first time</a></li>
+    <li><a href="#dashboard">Your dashboard — a tour</a></li>
+    <li><a href="#signin">Signing in &amp; signing out (the daily routine)</a></li>
+    <li><a href="#timelog">Time logging — start, breaks, end</a></li>
+    <li><a href="#attendance">Attendance — checking your record</a></li>
+    <li><a href="#leave">Requesting time off</a></li>
+    <li><a href="#performance">My Performance — reading your review</a></li>
+    <li><a href="#documents">My Documents — getting copies of HR papers</a></li>
+    <li><a href="#orgchart">Org Chart — who works where</a></li>
+    <li><a href="#chat">Chat, calls &amp; video</a></li>
+    <li><a href="#profile">Updating your profile</a></li>
+    <li><a href="#shortcuts">Keyboard shortcuts</a></li>
+    <li><a href="#faq">FAQ &amp; troubleshooting</a></li>
+  </ol>
+</div>
 
-<h2>🆕 What's New (V10 → V3.5)</h2>
-
-<p>The features that have changed for you since the V10 line. The rest of the guide shows how to use each part of the app.</p>
-
-<h3>Chat — A Lot Better Now</h3>
-<p>The 💬 chat icon moved into the top bar next to your 🔔 notifications. It now does what you'd expect:</p>
+<h2 id="welcome">1. Welcome — what TaskTango is for</h2>
+<p>
+  TaskTango is the place where your company tracks <strong>who's working, who's on leave, who's signed in today, and how everyone's performing</strong>. It replaces the old habit of WhatsApping your manager to say "I've arrived" and emailing HR for a leave form — everything happens in one app.
+</p>
+<p>As an employee, you'll use TaskTango to:</p>
 <ul>
-  <li><strong>Pop-up notifications</strong> — when a colleague messages you and you're not in the chat panel, your computer shows a desktop notification. Clicking it opens the conversation.</li>
-  <li><strong>Pulsing red badge</strong> over the icon when you have unread messages.</li>
-  <li><strong>Auto-open</strong> — clicking 💬 jumps straight into your most recent unread thread instead of making you click through the contact list.</li>
-  <li><strong>Emoji picker</strong> (😊 button next to the message box) — about 80 popular emojis ready to drop in.</li>
-  <li><strong>File attachments</strong> (📎 button) — share screenshots, PDFs, or any file up to 10 MB. Images preview right in the chat; other files open in their default app when clicked.</li>
+  <li><strong>Sign in</strong> at the start of each work day and <strong>sign out</strong> at the end</li>
+  <li><strong>Log your breaks</strong> so your real working hours are accurate</li>
+  <li><strong>Request leave</strong> (annual, sick, bereavement, etc.) and see how much you have left</li>
+  <li><strong>Chat &amp; call</strong> teammates without needing a separate app</li>
+  <li><strong>Read your performance reviews</strong> when your lead writes one</li>
+  <li><strong>See company structure</strong> (who's the lead of which team)</li>
+  <li><strong>Download your HR documents</strong> (offer letter, contracts) any time you need them</li>
 </ul>
 
-<h3>Mobile / Tablet Friendly</h3>
-<p>You can now use TaskTango on a phone or tablet — log your time, request leave, check your hours. The layout adjusts automatically: on a phone the sidebar becomes a row of icons across the top.</p>
+<div class="tip">
+  TaskTango runs in <strong>two flavours</strong>: a desktop app installed on your work PC, and a web version you can open in any browser at the URL your admin gave you. Both look identical and your account works on either.
+</div>
 
-<h3>Profile Pictures</h3>
-<p>Your profile picture (uploaded by HR or by you on the My Profile page) now shows on your dashboard header avatar and on every chat message you send.</p>
+<h2 id="login">2. Logging in for the first time</h2>
 
-<h3>Half-Day Leave</h3>
-<p>You can now request a <strong>half day</strong> instead of a full day off — useful for medical appointments or short personal errands.</p>
-
-<h3>Leave Balance Rollover</h3>
-<p>Unused leave at year-end may carry forward or be encashed depending on the policy your HR has configured. Your My Leave Requests page shows the carried-forward balance separately so you can see exactly where your allowance came from.</p>
-
-<!-- =================================================== -->
-
-<h2>Getting Started</h2>
-
+<h3>Step-by-step</h3>
 <ol class="steps">
-  <li><strong>Open TaskTango</strong> — double-click the TaskTango icon on your desktop.</li>
-  <li><strong>Log in</strong> — type your username and password. If this is your first time, the password is <code>password</code>; you'll be asked to change it on first login.</li>
-  <li><strong>You land on the Dashboard</strong> — your home screen, with shortcuts and a quick summary of your account.</li>
-  <li><strong>Use the menu on the left</strong> — every feature lives in its own tab. The next sections explain each one.</li>
+  <li>Open TaskTango (double-click the desktop icon, or go to the URL your admin emailed you).</li>
+  <li>You'll see a green login screen. Type the <strong>email address</strong> your admin set up for you.</li>
+  <li>Type the <strong>temporary password</strong> you were given.</li>
+  <li>Click <strong>Sign In</strong>. The app will immediately ask you to <strong>choose a new password</strong> — this is mandatory on first login.</li>
+  <li>Pick something at least 6 characters long. Confirm it. Click <strong>Save</strong>.</li>
+  <li>You're in.</li>
 </ol>
 
+<div class="warn">
+  Your temporary password only works once. If you don't get to the password-change step (e.g., you closed the browser by accident), ask your admin to <em>reset</em> your password — they can issue a fresh temporary one.
+</div>
+
+<div class="example">
+  HR creates an account for "Priya Sharma" with email <code>priya@acme.com</code> and a one-time password <code>Welcome123</code>. Priya logs in on Monday morning, sees the change-password prompt, and sets her real password to something she'll remember. From Tuesday onwards she uses only her real password.
+</div>
+
+<h3>If you forget your password later</h3>
+<p>You can't reset it yourself — that's deliberate, so nobody else can hijack your account from a "forgot password" form. Just message your admin (or open a chat with them inside TaskTango if you can get in from another device) and they'll reset it in seconds.</p>
+
+<h3>Auto-logout after inactivity</h3>
+<p>If you walk away for <strong>30 minutes without touching the keyboard or mouse</strong>, TaskTango logs you out automatically. You'll get a brief warning toast, then the login screen. This protects your account if you leave a workstation unattended.</p>
+
+<h2 id="dashboard">3. Your dashboard — a tour</h2>
+<p>The first thing you see after logging in is <strong>My Dashboard</strong>. It has three main zones:</p>
+
+<h3>The header bar (top of the page)</h3>
+<ul>
+  <li><strong>Quick Sign In/Out chip</strong> — a small pill that shows your status for today: <span class="pill pill-grey">▶ Sign In</span> if you haven't started, <span class="pill pill-green">● In · 09:14</span> once you've signed in, <span class="pill pill-blue">■ Done · 17:42</span> after you've signed out. Click it to sign in/out without leaving the page.</li>
+  <li><strong>Chat icon</strong> 💬 — opens the chat sidebar. A red bubble appears when you have unread messages.</li>
+  <li><strong>Notification bell</strong> 🔔 — leave approvals, new reviews, system messages.</li>
+  <li><strong>Your avatar</strong> — your photo if uploaded, otherwise the first letter of your name on an orange circle.</li>
+</ul>
+
+<h3>The left sidebar (your menu)</h3>
+<ul>
+  <li><strong>Dashboard</strong> — this page</li>
+  <li><strong>Employee Directory</strong> — see everyone in the company (read-only for you)</li>
+  <li><strong>Time Logging</strong> — start/end your day and break tracking</li>
+  <li><strong>Attendance</strong> — your calendar of present/absent/leave days</li>
+  <li><strong>Leave Requests</strong> — apply for time off, see balances</li>
+  <li><strong>My Performance</strong> — view reviews your lead has written about you</li>
+  <li><strong>My Documents</strong> — your offer letter, contracts, ID copies</li>
+  <li><strong>Org Chart</strong> — visual company structure with PDF export</li>
+</ul>
+
+<h3>The main content area</h3>
+<p>This shows your <strong>profile card</strong> on the left (with a <strong>profile completeness ring</strong> — the green donut tells you how much of your profile is filled in) and four quick-stat cards on the right:</p>
+<ul>
+  <li><strong>Log Your Time</strong> — jumps to Time Logging</li>
+  <li><strong>Annual Leave Balance</strong> — how many days you have left this year</li>
+  <li><strong>Punctuality</strong> — derived from your last 30 days of sign-ins</li>
+  <li><strong>Performance Score</strong> — your most recent review average</li>
+</ul>
+
 <div class="tip">
-  <strong>Tip:</strong> Forgot your password? Ask a department lead or admin to reset it. You'll be given a temporary password and asked to set a new one when you log in.
+  The <strong>profile completeness ring</strong> turns green at 90 %+, amber at 60–89 %, and red below 60 %. A complete profile means HR has everything they need to process payroll, send statutory notices, etc. If yours is red, scroll down to <a href="#profile">Section 12</a> and fill in the blanks.
 </div>
 
-<!-- =================================================== -->
+<h2 id="signin">4. Signing in & signing out (the daily routine)</h2>
+<p>This is the most important thing you'll do every day. There are <strong>two equally valid ways</strong> to do it:</p>
 
-<h2>The Menu, One Tab at a Time</h2>
+<h3>Option A — the Quick chip in the header (recommended)</h3>
+<ol class="steps">
+  <li>When you arrive at work and open TaskTango, look at the top-right.</li>
+  <li>You'll see <span class="pill pill-grey">▶ Sign In</span>.</li>
+  <li>Click it once. The chip turns green and shows <span class="pill pill-green">● In · 09:14</span>.</li>
+  <li>When you finish for the day, click the green chip. It changes to <span class="pill pill-blue">■ Done · 17:42</span>.</li>
+</ol>
 
-<!-- Dashboard -->
-<div class="tab-card">
-  <h3><span class="icon">🏠</span>Dashboard</h3>
-  <p>Your home screen. Shows your name, today's date, and a quick at-a-glance summary.</p>
-  <p><strong>What you do here:</strong> Just look around. It's a starting point. If you want to do something specific, click one of the other tabs on the left.</p>
+<h3>Option B — the Attendance page</h3>
+<ol class="steps">
+  <li>Open <strong>Attendance</strong> from the sidebar.</li>
+  <li>Click the big <strong>Sign In</strong> button at the top.</li>
+  <li>At the end of the day, return and click <strong>Sign Out</strong>.</li>
+</ol>
+
+<div class="warn">
+  If you forget to sign in within <strong>30 minutes</strong> of your scheduled start time, the system will automatically mark you Absent for the day. You can still sign in afterwards, but the absent flag stays unless your admin clears it. Sign in <em>as soon as</em> you start work.
 </div>
 
-<!-- Directory -->
-<div class="tab-card">
-  <h3><span class="icon">👥</span>Employee Directory</h3>
-  <p>The company phone book. See who works here, in which department, and their email/phone.</p>
-  <p><strong>What you do here:</strong> Look up a colleague's contact details. You can browse by department using the filter at the top.</p>
+<div class="warn">
+  If you forget to sign out, an automatic cron at <strong>23:00 (office time)</strong> will sign you out using your contracted end-time. Your hours may not match what you actually worked — message your lead to correct the record.
 </div>
 
-<!-- Time Logging -->
-<div class="tab-card">
-  <h3><span class="icon">⏰</span>Time Logging</h3>
-  <p>Where you record what time you started, when you took your lunch break, and when you finished.</p>
-  <p><strong>What you do here, every working day:</strong></p>
-  <ol class="steps">
-    <li>Type or pick today's <strong>Start Time</strong> when you begin work.</li>
-    <li>When you go on break, fill in the <strong>Break Start</strong> time.</li>
-    <li>When you come back, fill in the <strong>Break End</strong> time.</li>
-    <li>At the end of the day, fill in <strong>End Time</strong> and Save.</li>
-  </ol>
-  <div class="tip">
-    <strong>Shortcut:</strong> If you use the Sign In / Sign Out buttons on the <em>Attendance</em> tab, the system automatically fills your Start and End Times here. You only need to enter your break times.
-  </div>
+<div class="example">
+  Arjun's contracted day is 09:00–18:00 IST. He arrives at 09:05 Monday, taps the green chip → signed in at 09:05. He has lunch from 13:00–14:00 and remembers to log it as a Break on the Time Logging page (next section). He signs out at 18:30. His timesheet shows: <strong>Worked 8h 25m, Break 1h, Net 7h 25m</strong>.
 </div>
 
-<!-- Attendance -->
-<div class="tab-card">
-  <h3><span class="icon">📅</span>Attendance</h3>
-  <p>Your "I'm here today" button, plus a history of all your past attendance.</p>
-  <p><strong>What you do here, every working day:</strong></p>
-  <ol class="steps">
-    <li>Click <strong>Sign In</strong> when you arrive — the time is recorded automatically.</li>
-    <li>Click <strong>Sign Out</strong> when you're leaving for the day.</li>
-  </ol>
-  <p>The <em>Attendance History</em> table below shows your last 30 days at a glance, including the status (Present / Leave / Absent), sign-in time, sign-out time, and hours worked.</p>
-</div>
+<h2 id="timelog">5. Time logging — start, breaks, end</h2>
+<p>The Time Logging page is where the <em>detail</em> of your day lives. Sign In and Sign Out (Section 4) cover the bookends; this page also tracks breaks.</p>
 
-<!-- Leave Requests -->
-<div class="tab-card">
-  <h3><span class="icon">🌴</span>Leave Requests</h3>
-  <p>Request time off and see how many days you have left.</p>
-  <p><strong>To request leave:</strong></p>
-  <ol class="steps">
-    <li>Pick a <strong>Start Date</strong> and <strong>End Date</strong> — either by clicking days on the calendar, or by typing the dates directly into the date boxes.</li>
-    <li>Choose the <strong>Leave Type</strong> (e.g. Annual Leave).</li>
-    <li>Write a short <strong>Reason</strong> (e.g. "family wedding", "doctor appointment").</li>
-    <li>Click <strong>Submit Request</strong>. It goes to your department lead for approval.</li>
-  </ol>
-  <p><strong>While waiting:</strong> You'll see your request listed as <em>Pending Approval</em>. Once your lead approves, it moves to <em>Pending Final Approval</em> (admin), then becomes <em>Approved</em>.</p>
-  <div class="tip">
-    <strong>About your balance:</strong> The "Leave Entitlement" box at the top shows how many days you're allowed this year (prorated if you joined partway through the year). The "Leave Balance" panel shows how many you've used and how many remain.
-  </div>
-</div>
-
-<!-- My Performance -->
-<div class="tab-card">
-  <h3><span class="icon">📈</span>My Performance</h3>
-  <p>See how you're scoring on the company's performance metrics.</p>
-  <p><strong>What you see here:</strong> An overall score out of 100, plus a breakdown showing Attendance, Punctuality, Consistency, Lateness, Manager Rating, and Skill ratings. Green is good, yellow is acceptable, red needs attention.</p>
-  <div class="tip">
-    <strong>Want a higher score?</strong> Show up on time, log your hours every day, keep your time off planned, and ask your manager for skill assessments and ratings.
-  </div>
-</div>
-
-<!-- =================================================== -->
-
-<h2>Workflows — How Things Actually Flow</h2>
-
-<p>These show who does what, in what order. Your steps are highlighted in <span style="color:#047857; font-weight:700;">green</span>. Steps done by other people are in grey.</p>
-
-<!-- LEAVE WORKFLOW -->
-<div class="workflow">
-  <div class="wf-title">🌴 Submitting a Leave Request</div>
-  <div class="wf-step you">
-    <div class="wf-num">1</div>
-    <div class="wf-content">
-      <div class="wf-actor">You</div>
-      <div class="wf-action">Pick start/end dates, leave type, and reason on the Leave Requests page</div>
-      <div class="wf-result">Status: Pending Approval</div>
-    </div>
-  </div>
-  <div class="wf-arrow">↓</div>
-  <div class="wf-step">
-    <div class="wf-num">2</div>
-    <div class="wf-content">
-      <div class="wf-actor">Your Department Lead</div>
-      <div class="wf-action">Reviews and clicks Approve or Reject (usually within a day)</div>
-      <div class="wf-result">If approved → goes to admin · If rejected → you'll see the reason</div>
-    </div>
-  </div>
-  <div class="wf-arrow">↓</div>
-  <div class="wf-step">
-    <div class="wf-num">3</div>
-    <div class="wf-content">
-      <div class="wf-actor">Admin / MD</div>
-      <div class="wf-action">Final sign-off</div>
-      <div class="wf-result">This is the step that actually deducts your balance</div>
-    </div>
-  </div>
-  <div class="wf-arrow">↓</div>
-  <div class="wf-step outcome">
-    <div class="wf-num">✓</div>
-    <div class="wf-content">
-      <div class="wf-actor">Result</div>
-      <div class="wf-action">Your leave is approved</div>
-      <div class="wf-result">Days appear as "Leave" on the calendar · Leave balance is reduced · Your Attendance score isn't penalised</div>
-    </div>
-  </div>
-</div>
-
-<!-- DAILY ATTENDANCE WORKFLOW -->
-<div class="workflow">
-  <div class="wf-title">⏰ Your Daily Sign In / Sign Out</div>
-  <div class="wf-step you">
-    <div class="wf-num">1</div>
-    <div class="wf-content">
-      <div class="wf-actor">Morning — You</div>
-      <div class="wf-action">Click <strong>Sign In</strong> on the Attendance page</div>
-      <div class="wf-result">Your sign-in time is recorded · Start Time is auto-filled in Time Logging</div>
-    </div>
-  </div>
-  <div class="wf-arrow">↓</div>
-  <div class="wf-step you">
-    <div class="wf-num">2</div>
-    <div class="wf-content">
-      <div class="wf-actor">During the day — You</div>
-      <div class="wf-action">In Time Logging, fill in your Break Start and Break End times</div>
-      <div class="wf-result">Optional but feeds your Consistency score</div>
-    </div>
-  </div>
-  <div class="wf-arrow">↓</div>
-  <div class="wf-step you">
-    <div class="wf-num">3</div>
-    <div class="wf-content">
-      <div class="wf-actor">End of day — You</div>
-      <div class="wf-action">Click <strong>Sign Out</strong> on the Attendance page</div>
-      <div class="wf-result">Your sign-out time is recorded · End Time is auto-filled in Time Logging · Hours Worked is calculated</div>
-    </div>
-  </div>
-  <div class="wf-arrow">↓</div>
-  <div class="wf-step outcome">
-    <div class="wf-num">✓</div>
-    <div class="wf-content">
-      <div class="wf-actor">Result</div>
-      <div class="wf-action">Today appears in your Attendance History with status "Present"</div>
-      <div class="wf-result">Time logged feeds Punctuality, Consistency, and Lateness scores in your performance review</div>
-    </div>
-  </div>
-</div>
-
-<!-- PERFORMANCE SCORE WORKFLOW -->
-<div class="workflow">
-  <div class="wf-title">📈 How Your Performance Score Gets Built</div>
-  <div class="wf-step you">
-    <div class="wf-num">1</div>
-    <div class="wf-content">
-      <div class="wf-actor">You — every working day</div>
-      <div class="wf-action">Sign in / out, log your hours</div>
-      <div class="wf-result">Feeds Attendance, Punctuality, Consistency, Lateness (40% of score)</div>
-    </div>
-  </div>
-  <div class="wf-arrow">↓</div>
-  <div class="wf-step">
-    <div class="wf-num">2</div>
-    <div class="wf-content">
-      <div class="wf-actor">Your Lead / Manager</div>
-      <div class="wf-action">Rates you 1–5 on each skill (Skills tab) and gives an overall star rating</div>
-      <div class="wf-result">Skills 40% + Manager Rating 20% = 60% of your score</div>
-    </div>
-  </div>
-  <div class="wf-arrow">↓</div>
-  <div class="wf-step outcome">
-    <div class="wf-num">✓</div>
-    <div class="wf-content">
-      <div class="wf-actor">Result</div>
-      <div class="wf-action">Your overall score updates in real time on My Performance</div>
-      <div class="wf-result">Green ≥80 · Yellow 60–79 · Red below 60</div>
-    </div>
-  </div>
-</div>
-
-<h2>Top 5 Things to Remember</h2>
-
+<h3>The three buttons</h3>
 <table>
-  <thead><tr><th style="width:40px">#</th><th>Habit</th><th>Why it matters</th></tr></thead>
+  <thead><tr><th>Button</th><th>When to press it</th><th>What it records</th></tr></thead>
   <tbody>
-    <tr><td>1</td><td>Sign In and Sign Out every working day</td><td>This is what records your attendance and feeds your performance score.</td></tr>
-    <tr><td>2</td><td>Log your time each day in Time Logging</td><td>Your "Consistency" and "Lateness" scores are calculated from these entries.</td></tr>
-    <tr><td>3</td><td>Submit leave requests in advance</td><td>Your lead may not approve last-minute requests if it disrupts the team.</td></tr>
-    <tr><td>4</td><td>Check your performance once a month</td><td>If something is dragging your score down, you can fix it before review time.</td></tr>
-    <tr><td>5</td><td>Keep your contact info up to date</td><td>Ask your admin to update your phone, email, or banking info if anything changes.</td></tr>
+    <tr><td><strong>▶ Start Break</strong></td><td>When you step away — lunch, coffee, school pickup</td><td>A "break started" timestamp</td></tr>
+    <tr><td><strong>⏸ End Break</strong></td><td>When you're back at your desk</td><td>A "break ended" timestamp; the gap is added to your total break time</td></tr>
+    <tr><td><strong>📋 History</strong></td><td>To look at past days</td><td>A scrollable list of every day you've logged</td></tr>
   </tbody>
 </table>
 
-<!-- =================================================== -->
+<div class="tip">
+  You can log <strong>multiple breaks</strong> in one day. The page totals them up — 15-min morning tea + 45-min lunch + 10-min coffee = 70 minutes of break.
+</div>
 
-<h2>Frequently Asked Questions</h2>
+<h3>Viewing your history</h3>
+<p>The history table shows: Date · Sign In · Sign Out · Worked · Break · Net hours. As an employee you can only <em>view</em> — the Edit and Delete buttons are hidden because tampering with your own timesheet would defeat the point. Only admins can correct entries.</p>
 
-<h3>I forgot to sign in this morning. What happens?</h3>
-<p>Sign in as soon as you remember. The time stamp will reflect when you actually clicked Sign In. If you need it backdated, ask your lead or admin.</p>
+<h3>Export your hours to PDF</h3>
+<p>At the top of the History tab there's a <strong>📄 Export to PDF</strong> button. It produces a clean monthly timesheet you can email to HR or keep for your records.</p>
 
-<h3>Can I request leave for next year already?</h3>
-<p>Yes, as long as your remaining balance allows it. The Leave Calendar will let you pick future dates.</p>
+<div class="example">
+  Sneha sees that yesterday's "Sign Out" is missing because the auto-cron signed her out at 23:00 (she forgot to click). The system shows 13 hours worked, which is wrong. She messages her admin: "Hey, please correct yesterday's sign-out to 18:15." Admin fixes it in 30 seconds.
+</div>
 
-<h3>My leave request is stuck on "Pending Approval" — what now?</h3>
-<p>That means your department lead hasn't reviewed it yet. Give them a nudge in person or by email if it's urgent.</p>
+<h2 id="attendance">6. Attendance — checking your record</h2>
+<p>The Attendance page shows a <strong>monthly calendar</strong> of your status each day. Click any day for details.</p>
 
-<h3>I see "No leave types available" — why?</h3>
-<p>Close the Leave Requests page and re-open it once. The system will set up your balance the first time you visit. If it still shows nothing, ask an admin to check that leave types are configured.</p>
+<h3>Status colours you'll see</h3>
+<ul>
+  <li><span class="pill pill-green">Present</span> — you signed in</li>
+  <li><span class="pill pill-amber">Late</span> — you signed in after the 30-min grace window</li>
+  <li><span class="pill pill-red">Absent</span> — no sign-in at all that day</li>
+  <li><span class="pill pill-purple">On Leave</span> — an approved leave covered this day</li>
+  <li><span class="pill pill-blue">Holiday</span> — public holiday set by admin</li>
+  <li><span class="pill pill-grey">Weekend</span> — Saturday/Sunday by default</li>
+</ul>
 
-<h3>The overall score on My Performance is lower than I expected.</h3>
-<p>Open My Performance and look at the individual columns. Usually the culprit is missing data — for example, you haven't been logging time, or you haven't had any skill assessments yet. Talk to your manager.</p>
+<p>The page also shows monthly totals at the top: Present days, Leave days, Late days, Absent days. Use these to sanity-check before your manager does at month-end.</p>
 
-<h3>How do I change my password?</h3>
-<p>Click the <strong>Password</strong> button near your name in the bottom-left corner of the screen.</p>
+<h2 id="leave">7. Requesting time off</h2>
+
+<h3>How to submit a request</h3>
+<ol class="steps">
+  <li>Open <strong>Leave Requests</strong> from the sidebar.</li>
+  <li>At the top you'll see your <strong>balance cards</strong> — one per leave type your company offers (Annual, Sick, Casual, etc.). Each card shows: Total allocated · Used · Remaining.</li>
+  <li>Click <strong>+ New Leave Request</strong>.</li>
+  <li>Choose the <strong>leave type</strong> (Annual / Sick / etc.).</li>
+  <li>Pick the <strong>Start date</strong> and <strong>End date</strong> from the calendar.</li>
+  <li>Write a short <strong>reason</strong> — be specific enough that your lead can decide ("Family wedding in Pune", "GP appointment", "Annual holiday").</li>
+  <li>Click <strong>Submit</strong>. The request now sits in your lead's queue.</li>
+</ol>
+
+<h3>What happens after you submit</h3>
+<div class="feature-card">
+  <h4>The two-stage approval flow</h4>
+  <p>Every leave request goes through up to two checkpoints:</p>
+  <ol>
+    <li><strong>Department lead approves</strong> → status changes to "Lead approved"</li>
+    <li><strong>Admin gives final approval</strong> → status becomes "Approved" and the days are deducted from your balance</li>
+  </ol>
+  <p>If your department has no lead, the request skips straight to admin. You'll see a notification in your 🔔 bell at each stage.</p>
+</div>
+
+<h3>Cancelling a request</h3>
+<p>Click any pending request in your list, then click <strong>Cancel Request</strong>. You can cancel any request that hasn't been approved yet. Once approved, you can only cancel if your admin allows it (and the days will be returned to your balance).</p>
+
+<h3>Exporting upcoming leaves to your calendar</h3>
+<p>On the Leave Requests page, look for the <strong>📅 Export to Calendar</strong> button. Click it and TaskTango downloads an <code>.ics</code> file containing all your approved upcoming leaves. Open this file with Google Calendar, Outlook, or Apple Calendar and your time-off appears as all-day events.</p>
+
+<div class="example">
+  Maria gets a wedding invite for 12–14 March. On 1 March she opens Leave Requests, clicks <strong>+ New</strong>, picks Annual Leave, 12 Mar – 14 Mar, writes "Cousin's wedding in Goa", submits. Her lead approves at 11:00, admin approves at 14:00, and her bell tings twice. On 5 March she exports the .ics, opens it in Outlook, and her boss can see the OOO in the shared team calendar.
+</div>
+
+<h2 id="performance">8. My Performance — reading your review</h2>
+<p>When your lead or admin writes a performance review about you, it appears under <strong>My Performance</strong>. You can:</p>
+<ul>
+  <li><strong>Read the scores</strong> across the categories your company uses (e.g. Punctuality, Quality of Work, Teamwork, Initiative)</li>
+  <li><strong>See your overall rating</strong> as "X / 5"</li>
+  <li><strong>Read the lead's comments</strong></li>
+  <li><strong>Download a polished PDF</strong> of your review for your personal records</li>
+</ul>
+
+<div class="tip">
+  The PDF includes your <em>name</em>, your <em>team lead's name</em>, the review period, scores, comments, and a signature line. Keep a copy — it's useful when you negotiate a raise or job-change.
+</div>
+
+<h3>If you disagree with a review</h3>
+<p>Talk to your lead first. If you can't resolve it, send a message via the in-app chat to your admin requesting a meeting. TaskTango doesn't currently have a formal "dispute" button — the conversation happens out of the app.</p>
+
+<h2 id="documents">9. My Documents — HR papers on file</h2>
+<p>This is the simplest page in the app. It lists every document HR has uploaded for you: offer letter, signed contract, copy of your ID/passport, address proof, NDA — whatever they keep on file.</p>
+
+<h3>What you can do here</h3>
+<ul>
+  <li><strong>Download</strong> any document by clicking the row — it opens or saves the file (PDF, JPG, etc.)</li>
+  <li><strong>See when it was uploaded</strong> and what type it is</li>
+</ul>
+
+<h3>What you can't do here</h3>
+<ul>
+  <li>You <strong>cannot upload</strong> documents yourself — HR controls this. If you need to update an address proof, email it to HR and they'll replace the file.</li>
+  <li>You <strong>cannot delete</strong> documents — that's an admin-only action.</li>
+</ul>
+
+<h2 id="orgchart">10. Org Chart — who works where</h2>
+<p>The Org Chart shows the company in tree form: <strong>Managing Director / Admin</strong> at the top, <strong>Department Leads</strong> on the next level, and <strong>team members</strong> below their respective leads.</p>
+
+<h3>What you can do</h3>
+<ul>
+  <li><strong>Zoom in / out</strong> using the + / − buttons</li>
+  <li><strong>Pan around</strong> by clicking and dragging the empty space</li>
+  <li><strong>See photos</strong> — if someone has uploaded a profile picture it shows in the node</li>
+  <li><strong>Export to PDF</strong> — click the <strong>⬇ Export to PDF</strong> button. The chart prints to A3 landscape, perfect for the office wall.</li>
+</ul>
+
+<div class="example">
+  Karan just joined and isn't sure who his lead's lead is. He opens Org Chart, finds his own name, traces the line upward — his lead is Anjali (Engineering), her lead is Rohit (CTO, marked as MD). Now he knows the chain of command for escalations.
+</div>
+
+<h2 id="chat">11. Chat, calls & video</h2>
+<p>TaskTango has a built-in chat (like WhatsApp or Slack), plus 1-to-1 audio and video calls. No external app needed.</p>
+
+<h3>Opening chat</h3>
+<p>Click the 💬 icon in the top header. A panel slides in from the right. On the left of that panel is the <strong>contacts list</strong>, on the right is the active conversation.</p>
+
+<h3>Understanding the presence dots</h3>
+<p>Next to every name (and on every avatar) you'll see a small coloured dot indicating what that person is doing right now:</p>
+<table>
+  <thead><tr><th>Dot</th><th>Means</th><th>Best time to message?</th></tr></thead>
+  <tbody>
+    <tr><td><span class="dot dot-working"></span> Green</td><td>Signed in and actively working</td><td>Yes — they're at their desk</td></tr>
+    <tr><td><span class="dot dot-break"></span> Amber</td><td>On a break</td><td>Yes, but expect a slight delay</td></tr>
+    <tr><td><span class="dot dot-idle"></span> Yellow</td><td>Signed in but inactive for &gt; 10 min</td><td>Send a message; they'll see it when back</td></tr>
+    <tr><td><span class="dot dot-off"></span> Blue</td><td>Signed out for the day</td><td>They'll see it tomorrow</td></tr>
+    <tr><td><span class="dot dot-absent"></span> Red</td><td>Marked absent today</td><td>Not at work — try email</td></tr>
+    <tr><td><span class="dot dot-leave"></span> Purple</td><td>On approved leave</td><td>Don't disturb unless urgent</td></tr>
+    <tr><td><span class="dot dot-offline"></span> Grey</td><td>Hasn't been seen in a while</td><td>Status unknown</td></tr>
+  </tbody>
+</table>
+
+<h3>Sending a message</h3>
+<ol class="steps">
+  <li>Click a name in the contacts list to open a thread.</li>
+  <li>Type in the box at the bottom.</li>
+  <li>Press <kbd>Enter</kbd> to send. Use <kbd>Shift</kbd>+<kbd>Enter</kbd> for a new line within the same message.</li>
+  <li>Click the 😀 icon to add an emoji.</li>
+  <li>Click the 📎 icon to attach a file (image, PDF, doc — up to your admin's size limit).</li>
+</ol>
+
+<h3>Making a call</h3>
+<p>Inside any conversation, at the top of the thread you'll see two buttons:</p>
+<ul>
+  <li><strong>🎤 Audio Call</strong> — starts a voice call</li>
+  <li><strong>🎥 Video Call</strong> — starts a video call</li>
+</ul>
+<p>The other person hears a ringtone and sees an "Incoming call" banner. They can <strong>Accept</strong> or <strong>Decline</strong>. If they decline or don't pick up, a "Missed call" line appears in the chat.</p>
+
+<h3>The minimize button (so calls don't take over your screen)</h3>
+<p>During a call you'll see a small <strong>➖</strong> button in the call controls. Click it and the video shrinks to a tiny floating window (bottom-right of the screen). You can now keep using TaskTango — read emails, open the Org Chart, whatever — while the call continues. Click <strong>⛶</strong> to bring it back to full size.</p>
+
+<div class="tip">
+  Calls go <strong>peer-to-peer</strong> using WebRTC. The call doesn't pass through TaskTango's server, so quality depends on your and the other person's internet. If a call is choppy, switching from video to audio-only usually helps.
+</div>
+
+<div class="warn">
+  First time you make a call from the browser version, you'll see a <strong>"Allow microphone / camera"</strong> permission prompt. Click <strong>Allow</strong> — if you click Block, no calls will work until you reset the permission in browser settings.
+</div>
+
+<h2 id="profile">12. Updating your profile</h2>
+<p>From the <strong>Employee Directory</strong>, find your own name and click <strong>View</strong>. You'll see your profile. Some fields you can edit yourself; others (job title, salary, department) are admin-only.</p>
+
+<h3>Fields you can update</h3>
+<ul>
+  <li><strong>Profile picture</strong> — click the avatar and upload a square JPG/PNG (under 2 MB recommended)</li>
+  <li><strong>Phone number</strong> — emergency contact</li>
+  <li><strong>Address</strong></li>
+  <li><strong>Bank account &amp; IFSC</strong> — for payroll</li>
+  <li><strong>Date of birth</strong></li>
+</ul>
+
+<div class="tip">
+  After updating, your <strong>profile completeness ring</strong> on the dashboard recalculates. Aim for 100 % so you never get a payroll problem or a missed-birthday gift.
+</div>
+
+<h2 id="shortcuts">13. Keyboard shortcuts</h2>
+<p>TaskTango listens for these globally:</p>
+<table>
+  <thead><tr><th>Shortcut</th><th>What it does</th></tr></thead>
+  <tbody>
+    <tr><td><kbd>Esc</kbd></td><td>Close the open modal/dialog</td></tr>
+    <tr><td><kbd>Ctrl</kbd> + <kbd>S</kbd></td><td>Save / submit the form you're currently filling</td></tr>
+    <tr><td><kbd>Ctrl</kbd> + <kbd>/</kbd></td><td>Show this shortcut list on-screen</td></tr>
+  </tbody>
+</table>
+
+<h2 id="faq">14. FAQ &amp; troubleshooting</h2>
+
+<h4>Q: I can't sign in — it says "Invalid credentials"</h4>
+<p>Check Caps Lock. If that's not it, the password's been reset (or never set) — message your admin.</p>
+
+<h4>Q: I clicked Sign In but it flickered and went back to the button</h4>
+<p>The page may not have grabbed today's correct date. Refresh (<kbd>F5</kbd> or <kbd>Ctrl</kbd>+<kbd>R</kbd>) and try again. If it still happens, your office timezone setting may be wrong — tell your admin.</p>
+
+<h4>Q: I logged a break by mistake</h4>
+<p>You can't undo it yourself. Ask your admin to delete the entry — they have the Edit/Delete buttons.</p>
+
+<h4>Q: Why does my leave balance look wrong?</h4>
+<p>Open the Leave Requests page once — that "re-seeds" your balance row from current settings. If still off, your admin can correct it in the Employee Manager.</p>
+
+<h4>Q: Chat says someone's green but they're not responding</h4>
+<p>Green means signed in, not "actively at the keyboard". They could be in a meeting. After 10 minutes of inactivity the dot turns yellow.</p>
+
+<h4>Q: I joined a call but the other person can't hear me</h4>
+<p>Check that your browser/Electron has microphone permission. In Chrome: lock icon in address bar → Site settings → Microphone → Allow. Then leave and rejoin the call.</p>
+
+<h4>Q: How do I know which version I'm on?</h4>
+<p>Look at the bottom-right corner of any page — there's a small badge that says <strong>Build Production v4.5</strong>. Click it for an About box with full version details.</p>
+
+<h4>Q: Where is my data stored? Is it safe?</h4>
+<p>If you're on the desktop app, it's on your work PC. If you're on the web version, it's on your company's TaskTango server. Either way, your admin controls backups. Passwords are stored hashed (bcrypt) — even an admin cannot read your raw password.</p>
+
+<h4>Q: I'm leaving the company — what happens to my data?</h4>
+<p>Your admin will <em>offboard</em> you. Your historical records (timesheets, leaves, reviews) are kept for compliance, but your account is disabled — you can't log in. If you want a copy of your reviews, download the PDFs <em>before</em> your last day.</p>
 
 <div class="footer">
-  TaskTango — Employee Training Guide
+  <strong>TaskTango — Employee Training Guide</strong><br>
+  Designed, developed and written by <strong>Guninder Ahluwalia</strong>
+  <div class="small">Production v4.5 · © 2026 · All rights reserved</div>
 </div>
 
 </body>

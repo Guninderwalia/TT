@@ -88,7 +88,39 @@ function BuildBadge({ onClick }) {
 // About modal — opened by clicking the build badge or from the desktop Help
 // menu. Same content runs in the web build (where there is no native menu)
 // so users can see who built it and which version they're on.
-function AboutModal({ onClose }) {
+//
+// Also lists every training guide so web users (who don't get the native Help
+// menu) can open them with one click. Guides ship under /training-guides/*.html
+// (CRA copies public/training-guides into build/ automatically).
+function AboutModal({ onClose, roleClass }) {
+  // Open a static guide. Desktop uses shell.openExternal via the preload
+  // bridge; web just opens in a new tab.
+  const openGuide = (filename) => {
+    const url = `${window.location.origin || ''}/training-guides/${filename}`;
+    try {
+      if (window.electron && typeof window.electron.openExternal === 'function') {
+        window.electron.openExternal(url);
+      } else {
+        window.open(url, '_blank', 'noopener,noreferrer');
+      }
+    } catch (_) {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+  };
+
+  // Show every guide, but float the role-specific one to the top so the
+  // primary CTA matches who's reading.
+  const allGuides = [
+    { role: 'admin', label: '🛡️ Administrator Training Guide', file: 'Admin_Training_Guide.html' },
+    { role: 'lead',  label: '🧭 Department Lead Training Guide', file: 'Lead_Training_Guide.html' },
+    { role: 'user',  label: '🧑‍💼 Employee Training Guide', file: 'Employee_Training_Guide.html' },
+    { role: null,    label: '📊 Performance Review Scoring Guide', file: 'Performance_Review_Scoring_Guide.html' },
+  ];
+  const ordered = [
+    ...allGuides.filter(g => g.role === roleClass),
+    ...allGuides.filter(g => g.role !== roleClass)
+  ];
+
   return (
     <div
       className="modal-overlay"
@@ -102,10 +134,10 @@ function AboutModal({ onClose }) {
         onClick={e => e.stopPropagation()}
         style={{
           background: 'var(--bg-2, #1a3a52)', color: 'var(--text, #fff)',
-          minWidth: 340, maxWidth: '90vw', padding: '24px 28px',
+          minWidth: 380, maxWidth: '92vw', width: 460, padding: '24px 28px',
           borderRadius: 12, boxShadow: '0 16px 40px rgba(0,0,0,0.45)',
           border: '1px solid rgba(255,255,255,0.08)',
-          textAlign: 'center'
+          textAlign: 'center', maxHeight: '90vh', overflowY: 'auto'
         }}
       >
         <h2 style={{ marginTop: 0, marginBottom: 6, fontSize: 22 }}>TaskTango</h2>
@@ -129,6 +161,42 @@ function AboutModal({ onClose }) {
             <span style={{ color: 'var(--text-2, #9ca3af)' }}>Platform</span>
             <strong>{typeof window !== 'undefined' && window.electron && !window.__isWebShim ? 'Desktop (Electron)' : 'Web'}</strong>
           </div>
+        </div>
+
+        {/* Training guides — always shown so web users have a way in */}
+        <div style={{ marginTop: 22, textAlign: 'left' }}>
+          <div style={{
+            fontSize: 11, textTransform: 'uppercase', letterSpacing: '1.2px',
+            color: 'var(--text-2, #9ca3af)', fontWeight: 700, marginBottom: 8
+          }}>
+            📚 Training guides
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {ordered.map(g => (
+              <button
+                key={g.file}
+                onClick={() => openGuide(g.file)}
+                style={{
+                  textAlign: 'left',
+                  background: 'rgba(255,255,255,0.04)',
+                  border: '1px solid rgba(255,255,255,0.12)',
+                  color: 'var(--text, #fff)',
+                  borderRadius: 8,
+                  padding: '8px 12px',
+                  fontSize: 13,
+                  cursor: 'pointer'
+                }}
+              >
+                {g.label}
+              </button>
+            ))}
+          </div>
+          <p style={{
+            fontSize: 10.5, color: 'var(--text-2, #9ca3af)',
+            margin: '10px 0 0', fontStyle: 'italic'
+          }}>
+            All four guides written by Guninder Ahluwalia.
+          </p>
         </div>
 
         <p style={{ fontSize: 11, color: 'var(--text-2, #9ca3af)', marginTop: 18, marginBottom: 0 }}>
@@ -416,7 +484,7 @@ function App() {
         <ShortcutsHelp onClose={() => setShowShortcuts(false)} />
       )}
       <BuildBadge onClick={() => setShowAbout(true)} />
-      {showAbout && <AboutModal onClose={() => setShowAbout(false)} />}
+      {showAbout && <AboutModal onClose={() => setShowAbout(false)} roleClass={roleClass} />}
     </>
   );
 }
