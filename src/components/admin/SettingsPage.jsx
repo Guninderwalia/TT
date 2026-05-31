@@ -346,6 +346,11 @@ function SettingsPage({ user }) {
             </p>
           </div>
 
+          {/* v4.7.4 — Configure which days of the week are non-working.
+              Drives the cron auto-mark-absent + the "Sunday/Holiday" pill
+              on dashboards. Default is Sunday only. */}
+          <WeeklyOffDaysPanel />
+
           {/* v4.6 — Active session management — admins can also see this
               same panel for THEIR account; the same component is mounted
               for non-admins via the dashboard pages. */}
@@ -434,6 +439,149 @@ function WipeTestDataPanel() {
           </ul>
         </div>
       )}
+    </div>
+  );
+}
+
+// v4.7.4 — Configure which days of the week are weekly off (non-working).
+// Backed by app_settings.non_working_dow as a CSV of day-of-week numbers
+// (0=Sun, 6=Sat). Drives the cron auto-mark-absent + the "Sunday/Holiday"
+// pill on the live status widget.
+function WeeklyOffDaysPanel() {
+  const DAYS = [
+    { dow: 0, label: 'Sunday',    short: 'Sun' },
+    { dow: 1, label: 'Monday',    short: 'Mon' },
+    { dow: 2, label: 'Tuesday',   short: 'Tue' },
+    { dow: 3, label: 'Wednesday', short: 'Wed' },
+    { dow: 4, label: 'Thursday',  short: 'Thu' },
+    { dow: 5, label: 'Friday',    short: 'Fri' },
+    { dow: 6, label: 'Saturday',  short: 'Sat' },
+  ];
+  const [selected, setSelected] = React.useState(new Set([0])); // default Sunday only
+  const [loaded, setLoaded]     = React.useState(false);
+  const [saving, setSaving]     = React.useState(false);
+  const [savedAt, setSavedAt]   = React.useState(null);
+  const [error, setError]       = React.useState('');
+
+  React.useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const r = await window.electron.getSetting('non_working_dow');
+        if (cancelled) return;
+        const raw = r?.value ?? r?.data?.value ?? r;
+        if (typeof raw === 'string' && raw.trim()) {
+          const parsed = raw.split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n) && n >= 0 && n <= 6);
+          if (parsed.length > 0) setSelected(new Set(parsed));
+        }
+      } catch (e) {
+        if (!cancelled) setError(e.message || 'Could not load setting');
+      } finally {
+        if (!cancelled) setLoaded(true);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  const toggle = (dow) => {
+    setSelected(prev => {
+      const next = new Set(prev);
+      if (next.has(dow)) next.delete(dow); else next.add(dow);
+      return next;
+    });
+  };
+
+  const save = async () => {
+    setError('');
+    setSaving(true);
+    try {
+      const value = Array.from(selected).sort((a, b) => a - b).join(',');
+      const r = await window.electron.setSetting('non_working_dow', value);
+      if (r?.success === false) {
+        setError(r.message || 'Could not save');
+      } else {
+        setSavedAt(new Date());
+        window.toast?.success?.(selected.size === 0
+          ? 'No weekly off days — cron will run every day.'
+          : `Weekly off days saved: ${Array.from(selected).map(d => DAYS[d].short).join(', ')}`);
+      }
+    } catch (e) {
+      setError(e.message || 'Could not save');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div style={{
+      background: 'var(--bg-3, #1f2937)',
+      border: '1px solid var(--border, #374151)',
+      borderRadius: 10,
+      padding: '18px 22px',
+      margin: '16px 0'
+    }}>
+      <h3 style={{ margin: '0 0 6px', fontSize: 16, color: 'var(--text, #f3f4f6)' }}>
+        📅 Weekly Off Days
+      </h3>
+      <p style={{ margin: '0 0 14px', fontSize: 12.5, color: 'var(--text-2, #9ca3af)' }}>
+        Tick the days your company is closed. On those days the auto-Absent cron skips and the dashboard shows the day name (e.g. <strong>Sunday</strong>) instead of red Absent rows. Anyone who DOES sign in still shows their real status — sign-in always wins.
+      </p>
+
+      {error && (
+        <div style={{ padding: '8px 12px', marginBottom: 10, background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.35)', borderRadius: 6, color: '#fecaca', fontSize: 12.5 }}>
+          {error}
+        </div>
+      )}
+
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
+        {DAYS.map(d => {
+          const on = selected.has(d.dow);
+          return (
+            <button
+              key={d.dow}
+              onClick={() => toggle(d.dow)}
+              disabled={!loaded}
+              style={{
+                padding: '8px 14px',
+                borderRadius: 8,
+                cursor: 'pointer',
+                background: on ? 'rgba(99,102,241,0.18)' : 'rgba(255,255,255,0.04)',
+                color: on ? '#a5b4fc' : 'var(--text-2, #cbd5e1)',
+                border: '1px solid ' + (on ? 'rgba(99,102,241,0.55)' : 'rgba(255,255,255,0.12)'),
+                fontWeight: on ? 700 : 500,
+                fontSize: 13,
+                minWidth: 90
+              }}
+              title={on ? 'Click to remove from weekly off' : 'Click to mark as weekly off'}
+            >
+              {on ? '✓ ' : ''}{d.label}
+            </button>
+          );
+        })}
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <button
+          onClick={save}
+          disabled={saving || !loaded}
+          className="btn btn-primary"
+          style={{ padding: '8px 16px' }}
+        >
+          {saving ? 'Saving…' : 'Save Weekly Off Days'}
+        </button>
+        {savedAt && (
+          <span style={{ fontSize: 12, color: 'var(--text-2, #9ca3af)' }}>
+            Saved at {savedAt.toLocaleTimeString()}
+          </span>
+        )}
+        <span style={{ fontSize: 12, color: 'var(--text-2, #9ca3af)', marginLeft: 'auto' }}>
+          Default: <strong>Sunday only</strong>
+        </span>
+      </div>
+
+      <p style={{ margin: '12px 0 0', fontSize: 11.5, color: 'var(--text-2, #9ca3af)' }}>
+        Common patterns: <strong>Sun</strong> (India / Middle East 6-day week) · <strong>Sat + Sun</strong> (UK / US 5-day week) · <strong>Fri + Sat</strong> (Saudi / UAE).
+      </p>
     </div>
   );
 }

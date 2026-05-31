@@ -46,7 +46,12 @@ async function isNonWorkingDay(db, today) {
     // to avoid timezone slippage either side of midnight.
     const dow = new Date(`${today}T12:00:00Z`).getUTCDay();
 
-    let nonWorkDow = [0, 6]; // default Sat/Sun
+    // v4.7.4 — default to Sunday-only because Saturday is a working day
+    // in many countries (India, Middle East, several APAC markets). Admin
+    // can override via the app_settings.non_working_dow setting, exposed
+    // in Settings → Weekly Off Days. Format: comma-separated day-of-week
+    // numbers where 0=Sun, 1=Mon, ..., 6=Sat.
+    let nonWorkDow = [0]; // default Sunday only
     try {
       const row = await db.get(
         `SELECT value FROM app_settings WHERE key = 'non_working_dow'`
