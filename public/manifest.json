@@ -1,0 +1,44 @@
+{
+  "name": "TaskTango — HR & Employee Management",
+  "short_name": "TaskTango",
+  "description": "Sign in, log time, request leave, chat with your team, and view performance reviews — all in one place.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#080E1C",
+  "theme_color": "#080E1C",
+  "lang": "en",
+  "categories": ["business", "productivity"],
+  "icons": [
+    { "src": "/icon-512.png", "type": "image/png", "sizes": "512x512", "purpose": "any" },
+    { "src": "/icon-512.png", "type": "image/png", "sizes": "192x192", "purpose": "any" },
+    { "src": "/icon-512.png", "type": "image/png", "sizes": "180x180", "purpose": "any" },
+    { "src": "/icon-512.png", "type": "image/png", "sizes": "152x152", "purpose": "any" },
+    { "src": "/icon-512.png", "type": "image/png", "sizes": "144x144", "purpose": "any" },
+    { "src": "/icon-512.png", "type": "image/png", "sizes": "96x96",  "purpose": "any" },
+    { "src": "/icon-512.png", "type": "image/png", "sizes": "72x72",  "purpose": "any" },
+    { "src": "/icon-512.png", "type": "image/png", "sizes": "48x48",  "purpose": "any" },
+    { "src": "/icon-512.png", "type": "image/png", "sizes": "512x512", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    {
+      "name": "Sign In / Out",
+      "short_name": "Attendance",
+      "description": "Jump straight to attendance",
+      "url": "/#/attendance"
+    },
+    {
+      "name": "My Leave",
+      "short_name": "Leave",
+      "description": "Open your leave requests",
+      "url": "/#/leave"
+    },
+    {
+      "name": "Chat",
+      "short_name": "Chat",
+      "description": "Open chat",
+      "url": "/#/"
+    }
+  ]
+}

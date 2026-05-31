@@ -11,7 +11,26 @@ import { ToastContainer } from './components/common/Toast';
 import { applyTheme, getTheme } from './components/common/ThemeToggle';
 import { setOfficeTimezone, syncOfficeTimeFromInternet } from './utils/officeTime';
 import OnboardingWizard from './components/common/OnboardingWizard';
+import PwaInstallBanner from './components/common/PwaInstallBanner';
 import './styles/app.css';
+
+// v4.7 — register the PWA service worker. Skipped in the Electron desktop
+// build (window.electron is present and isn't a web shim) because Electron
+// doesn't need offline caching and SW registration inside file:// is fragile.
+if (typeof window !== 'undefined'
+    && 'serviceWorker' in navigator
+    && !(window.electron && !window.__isWebShim)) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker
+      .register('/service-worker.js', { scope: '/' })
+      .then((reg) => {
+        console.log('[PWA] Service worker registered, scope =', reg.scope);
+      })
+      .catch((err) => {
+        console.warn('[PWA] Service worker registration failed:', err);
+      });
+  });
+}
 
 // Apply the saved theme BEFORE React renders anything. This is at module
 // scope so it runs once when the JS bundle loads, preventing a flash of
@@ -21,7 +40,7 @@ applyTheme(getTheme());
 // Bump this single constant when packaging a new build. The label is rendered
 // in the bottom-right corner on every screen (incl. login) so it's easy to
 // confirm which version is running. Click the badge to open the About modal.
-const BUILD_VERSION = 'Production v4.6.3';
+const BUILD_VERSION = 'Production v4.7';
 const APP_DEVELOPER = 'Guninder Ahluwalia';
 const APP_YEAR      = new Date().getFullYear();
 
@@ -486,6 +505,10 @@ function App() {
       )}
       <BuildBadge onClick={() => setShowAbout(true)} />
       {showAbout && <AboutModal onClose={() => setShowAbout(false)} roleClass={roleClass} />}
+
+      {/* v4.7 — PWA install nudge. Self-hides on desktop, when already
+          installed, or when the user has dismissed it. */}
+      <PwaInstallBanner />
 
       {/* v4.6 — First-time onboarding wizard.
           Shown immediately after a freshly-created user completes their
