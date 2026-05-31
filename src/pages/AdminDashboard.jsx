@@ -174,7 +174,10 @@ function AdminOverview({ user }) {
   // v4.7.1 — true if today is Sat/Sun or a public holiday. Drives the
   // "On Holiday" label on the live status widget so the dashboard doesn't
   // turn red on weekends.
+  // v4.7.3 — nonWorkingLabel carries the day name ('Sunday') or
+  // holiday name ('Diwali') so the pill says something meaningful.
   const [isNonWorkingToday, setIsNonWorkingToday] = useState(false);
+  const [nonWorkingLabel, setNonWorkingLabel] = useState(null);
 
   useEffect(() => {
     const loadStats = async () => {
@@ -203,6 +206,7 @@ function AdminOverview({ user }) {
           window.electron.isTodayNonWorking ? window.electron.isTodayNonWorking() : Promise.resolve({ isNonWorking: false })
         ]);
         setIsNonWorkingToday(!!nonWorking?.isNonWorking);
+        setNonWorkingLabel(nonWorking?.label || null);
         setStats({
           totalEmployees: employees.data?.length || 0,
           departments: departments.data?.length || 0,
@@ -286,7 +290,7 @@ function AdminOverview({ user }) {
           Sits ABOVE the historical Analytics block to mirror the lead view. */}
       <h3 style={{ marginTop: '24px', marginBottom: '8px', color: 'var(--text)' }}>Live Employee Status</h3>
       <div className="charts-grid">
-        <TeamLiveStatusChart teamRows={companyToday} title="Company Status — Right Now" isNonWorkingDay={isNonWorkingToday} />
+        <TeamLiveStatusChart teamRows={companyToday} title="Company Status — Right Now" isNonWorkingDay={isNonWorkingToday} nonWorkingLabel={nonWorkingLabel} />
         <div className="chart-card">
           <h3 className="chart-card-title">Who's On Right Now</h3>
           <div className="chart-card-body" style={{ height: 260, overflowY: 'auto', padding: '4px 2px' }}>
@@ -295,7 +299,7 @@ function AdminOverview({ user }) {
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {companyToday.map(row => {
-                  const s = deriveTeamMemberStatus(row, isNonWorkingToday);
+                  const s = deriveTeamMemberStatus(row, isNonWorkingToday, nonWorkingLabel);
                   return (
                     <div key={row.userId} style={{
                       display: 'flex', alignItems: 'center', gap: 10,

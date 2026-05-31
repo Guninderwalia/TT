@@ -215,20 +215,30 @@ export const TEAM_STATUS = {
   NOT_STARTED: { key: 'not-started', label: 'Not Started', color: '#94a3b8' },
   ABSENT:      { key: 'absent',      label: 'Absent',      color: '#ef4444' },
   ON_LEAVE:    { key: 'on-leave',    label: 'On Leave',    color: '#a78bfa' },
-  // v4.7.1 — purple-ish, distinct from On Leave to avoid confusion. Used
-  // when today is Sat/Sun (or in the public_holidays table) for any
-  // employee who didn't sign in. Anyone who DID sign in still shows
-  // their real status (Working / Signed Off etc.) because sign-in trumps
-  // the holiday label — they clearly chose to work.
-  ON_HOLIDAY:  { key: 'on-holiday',  label: 'On Holiday',  color: '#6366f1' }
+  // v4.7.1 — indigo, distinct from On Leave to avoid confusion. Used when
+  // today is Sat/Sun (or in the public_holidays table) for any employee
+  // who didn't sign in. Anyone who DID sign in still shows their real
+  // status (Working / Signed Off etc.) because sign-in trumps the
+  // non-working-day label — they clearly chose to work.
+  //
+  // v4.7.3 — Label is just "Holiday" by default but dashboards pass the
+  // actual day-of-week ('Sunday') or public holiday name ('Diwali') so
+  // the pill reads correctly. "On Holiday" was misleading — it sounded
+  // like the employee had booked PTO when really it's just the weekend.
+  ON_HOLIDAY:  { key: 'on-holiday',  label: 'Holiday',     color: '#6366f1' }
 };
 
 // v4.7.1 — Added `isNonWorkingDay` flag. When true, employees who never
-// signed in are labelled "On Holiday" rather than the misleading "Absent"
-// / "Not Started" pair that filled the dashboard every Sunday morning.
+// signed in are labelled with the day name (Sunday) or holiday name
+// instead of the misleading red "Absent" / "Not Started" pair that
+// filled the dashboard every weekend.
+//
+// v4.7.3 — Optional `nonWorkingLabel` arg overrides the default 'Holiday'
+// label so the pill can say 'Sunday' / 'Diwali' / etc.
+//
 // Sign-in always wins the priority order so someone who works a weekend
 // keeps their real status (Working / Signed Off / etc.).
-export function deriveTeamMemberStatus(row, isNonWorkingDay = false) {
+export function deriveTeamMemberStatus(row, isNonWorkingDay = false, nonWorkingLabel = null) {
   const s = (row?.attendanceStatus || '').toLowerCase();
   // Real working signals always come first — they prove the person showed
   // up regardless of what attendance.status says.
@@ -237,7 +247,11 @@ export function deriveTeamMemberStatus(row, isNonWorkingDay = false) {
   if (row?.breakStartTime && !row?.breakEndTime)    return TEAM_STATUS.ON_BREAK;
   if (row?.startTime)                               return TEAM_STATUS.WORKING;
   // No sign-in:
-  if (isNonWorkingDay)                              return TEAM_STATUS.ON_HOLIDAY;
+  if (isNonWorkingDay) {
+    return nonWorkingLabel
+      ? { ...TEAM_STATUS.ON_HOLIDAY, label: nonWorkingLabel }
+      : TEAM_STATUS.ON_HOLIDAY;
+  }
   if (s === 'absent')                               return TEAM_STATUS.ABSENT;
   return TEAM_STATUS.NOT_STARTED;
 }
@@ -245,7 +259,7 @@ export function deriveTeamMemberStatus(row, isNonWorkingDay = false) {
 // New for v4.1 — Live "right now" team status. Doughnut counts grouped by
 // the six statuses above. Pair this with the roster list below it in the
 // LeadOverview render so leads can see both shape and detail at a glance.
-export function TeamLiveStatusChart({ teamRows = [], title = 'Team Status — Right Now', isNonWorkingDay = false }) {
+export function TeamLiveStatusChart({ teamRows = [], title = 'Team Status — Right Now', isNonWorkingDay = false, nonWorkingLabel = null }) {
   const counts = {
     [TEAM_STATUS.WORKING.key]:     0,
     [TEAM_STATUS.ON_BREAK.key]:    0,
@@ -256,10 +270,15 @@ export function TeamLiveStatusChart({ teamRows = [], title = 'Team Status — Ri
     [TEAM_STATUS.ON_HOLIDAY.key]:  0
   };
   for (const row of teamRows) {
-    const s = deriveTeamMemberStatus(row, isNonWorkingDay);
+    const s = deriveTeamMemberStatus(row, isNonWorkingDay, nonWorkingLabel);
     counts[s.key]++;
   }
-  const order = [TEAM_STATUS.WORKING, TEAM_STATUS.ON_BREAK, TEAM_STATUS.NOT_STARTED, TEAM_STATUS.SIGNED_OFF, TEAM_STATUS.ABSENT, TEAM_STATUS.ON_LEAVE, TEAM_STATUS.ON_HOLIDAY];
+  // v4.7.3 — show the day name (Sunday) or holiday name on the donut
+  // legend instead of the generic "Holiday".
+  const holidaySlot = nonWorkingLabel
+    ? { ...TEAM_STATUS.ON_HOLIDAY, label: nonWorkingLabel }
+    : TEAM_STATUS.ON_HOLIDAY;
+  const order = [TEAM_STATUS.WORKING, TEAM_STATUS.ON_BREAK, TEAM_STATUS.NOT_STARTED, TEAM_STATUS.SIGNED_OFF, TEAM_STATUS.ABSENT, TEAM_STATUS.ON_LEAVE, holidaySlot];
   const labels = order.map(s => s.label);
   const data   = order.map(s => counts[s.key]);
   const colors = order.map(s => s.color);

@@ -12,7 +12,7 @@ const { patchIpcMain, startServer: startWebServer } = require('./webServer');
 //   Review Scoring Guide is always present (everyone needs it).
 // ============================================================================
 const PRODUCT_NAME      = 'TaskTango';
-const PRODUCT_VERSION   = 'Production v4.7.2';
+const PRODUCT_VERSION   = 'Production v4.7.3';
 const PRODUCT_DEVELOPER = 'Guninder Ahluwalia';
 
 // Tracked across the session so the menu can show the right guide for the

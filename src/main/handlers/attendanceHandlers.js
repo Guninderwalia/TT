@@ -26,17 +26,37 @@ function mapAttendanceOut(row) {
 
 function register(ipcMain, db) {
   // v4.7.1 — Tiny helper so dashboards know whether today should be styled
-  // as a Holiday. Returns { isNonWorking: boolean, reason: string|null }.
-  // Reuses the same isNonWorkingDay helper that the cron uses so the two
-  // never disagree on what counts as a non-working day.
+  // as a non-working day. Reuses the same isNonWorkingDay helper that the
+  // cron uses so the two never disagree.
+  //
+  // v4.7.3 — Now also returns a human label ('Sunday', 'Diwali', etc.) so
+  // dashboards can show what KIND of non-working day it is instead of the
+  // misleading "On Holiday" pill (which sounded like the person was on
+  // PTO, when really it's just a weekend).
   ipcMain.handle('attendance:isTodayNonWorking', async () => {
     try {
       const today = getOfficeDate();
       const { isNonWorkingDay } = require('../cronJobs');
       const r = await isNonWorkingDay(db, today);
-      return { success: true, isNonWorking: !!r?.skip, reason: r?.reason || null, today };
+
+      let label = null;
+      if (r?.skip) {
+        // r.reason is either 'weekend (dow=N)' or 'public holiday (NAME)'.
+        const holMatch = String(r.reason || '').match(/^public holiday \((.+)\)$/);
+        if (holMatch) {
+          label = holMatch[1]; // the holiday's name
+        } else {
+          // Weekend — convert today's date string into the day name. We
+          // build at noon UTC to avoid timezone slippage either side of
+          // midnight (same trick the cron uses).
+          const dow = new Date(`${today}T12:00:00Z`).getUTCDay();
+          label = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][dow];
+        }
+      }
+
+      return { success: true, isNonWorking: !!r?.skip, reason: r?.reason || null, label, today };
     } catch (e) {
-      return { success: false, isNonWorking: false, reason: null, message: e.message };
+      return { success: false, isNonWorking: false, reason: null, label: null, message: e.message };
     }
   });
 

@@ -185,6 +185,8 @@ function LeadOverview({ user }) {
   // Absent / On Leave) for each active team member.
   const [teamToday, setTeamToday] = useState([]);
   const [isNonWorkingToday, setIsNonWorkingToday] = useState(false);
+  // v4.7.3 — actual day name or holiday name for the pill label.
+  const [nonWorkingLabel, setNonWorkingLabel] = useState(null);
 
   // Allow either snake_case or camelCase on the user object so this works
   // regardless of where the user object was loaded from.
@@ -244,6 +246,7 @@ function LeadOverview({ user }) {
           if (window.electron.isTodayNonWorking) {
             const nw = await window.electron.isTodayNonWorking();
             setIsNonWorkingToday(!!nw?.isNonWorking);
+            setNonWorkingLabel(nw?.label || null);
           }
         } catch (_) { /* keep default false */ }
       } catch (error) {
@@ -501,7 +504,7 @@ function LeadOverview({ user }) {
           it's the first thing the lead sees on the home page. */}
       <h3 style={{ marginTop: '24px', marginBottom: '8px', color: 'var(--text)' }}>Live Team Status</h3>
       <div className="charts-grid">
-        <TeamLiveStatusChart teamRows={teamToday} isNonWorkingDay={isNonWorkingToday} />
+        <TeamLiveStatusChart teamRows={teamToday} isNonWorkingDay={isNonWorkingToday} nonWorkingLabel={nonWorkingLabel} />
         <div className="chart-card">
           <h3 className="chart-card-title">Who's On Right Now</h3>
           <div className="chart-card-body" style={{ height: 260, overflowY: 'auto', padding: '4px 2px' }}>
@@ -510,7 +513,7 @@ function LeadOverview({ user }) {
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {teamToday.map(row => {
-                  const s = deriveTeamMemberStatus(row, isNonWorkingToday);
+                  const s = deriveTeamMemberStatus(row, isNonWorkingToday, nonWorkingLabel);
                   return (
                     <div key={row.userId} style={{
                       display: 'flex', alignItems: 'center', gap: 10,
