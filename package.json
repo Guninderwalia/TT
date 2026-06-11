@@ -1,6 +1,6 @@
 {
   "name": "tasktango-crm",
-  "version": "5.1.0",
+  "version": "5.1.1",
   "description": "Enterprise HR & Employee Management Desktop Application",
   "main": "src/main/main.js",
   "homepage": "./",

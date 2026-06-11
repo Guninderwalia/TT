@@ -278,9 +278,20 @@ function AttendanceTracker({ user }) {
     return emp ? emp.fullName : 'Unknown';
   };
 
-  const formatTime = (isoString) => {
-    if (!isoString) return '-';
-    const date = new Date(isoString);
+  const formatTime = (value) => {
+    if (!value) return '-';
+    // The DB stores sign-in/out as "HH:MM:SS" (or "HH:MM") TIME strings, not
+    // ISO datetimes. new Date("09:00:00") is Invalid Date — which is why the
+    // table view showed "Invalid Date". Detect the time-string form and format
+    // it directly; fall back to Date parsing only for legacy ISO values.
+    if (typeof value === 'string' && /^\d{1,2}:\d{2}(:\d{2})?$/.test(value)) {
+      const [h, m] = value.split(':').map(Number);
+      const period = h >= 12 ? 'PM' : 'AM';
+      const hour12 = ((h + 11) % 12) + 1;
+      return `${hour12}:${String(m).padStart(2, '0')} ${period}`;
+    }
+    const date = new Date(value);
+    if (isNaN(date.getTime())) return '-';
     return date.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
   };
 
