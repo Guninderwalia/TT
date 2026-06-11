@@ -596,3 +596,35 @@ a:hover {
     width: 100%;
   }
 }
+
+/* v5.4 — Mobile table + card-grid polish. Data tables already scroll
+   horizontally via their .table-wrapper / .form-section container (see the
+   900px block); here we tighten cell spacing and reflow the fixed
+   multi-column summary-card grids (which use inline grid-template-columns)
+   so they stack instead of squashing off-screen. */
+@media (max-width: 768px) {
+  .table th,
+  .table td {
+    padding: 9px 11px;
+  }
+  /* Fixed N-column card rows → 2 columns on tablets/large phones. The
+     !important is required to override the inline grid-template-columns. */
+  .form-section > div[style*="grid-template-columns"] {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .table {
+    font-size: 12px;
+  }
+  .table th,
+  .table td {
+    padding: 7px 9px;
+    white-space: nowrap; /* keep rows on one line so the container scrolls cleanly */
+  }
+  /* Single-column cards on the smallest screens. */
+  .form-section > div[style*="grid-template-columns"] {
+    grid-template-columns: 1fr !important;
+  }
+}

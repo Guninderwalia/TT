@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getOfficeDate } from '../../utils/officeTime';
 import { formatTime12h, formatDateLong } from '../../utils/dateTime';
+import { exportToCsv, exportToXlsx, exportTableToPdf } from '../../utils/reportExport';
 
 function AttendanceTracker({ user }) {
   // v4.7.4 — Admin / MD can reverse an accidental Sign Out so the
@@ -293,6 +294,62 @@ function AttendanceTracker({ user }) {
     const h = formatHoursWorked(signIn, signOut);
     if (h === '-') return '-';
     return `${h} hrs`;
+  };
+
+  // v5.4 — Build an export of the CURRENT view.
+  //   Table view  → daily attendance register (one row per employee).
+  //   Calendar view → monthly register grid (employees × days, status letters).
+  const buildExportData = () => {
+    if (viewMode === 'table') {
+      const headers = ['Employee', 'Date', 'Sign In', 'Sign Out', 'Hours Worked', 'Status', 'Notes'];
+      const rows = attendance.map(att => {
+        const s = (att.status || '').toLowerCase();
+        const showTimes = s === 'present';
+        return [
+          getEmployeeName(att.userId),
+          selectedDate,
+          showTimes ? formatTime(att.signInTime) : '-',
+          showTimes ? formatTime(att.signOutTime) : '-',
+          showTimes ? getHoursWorked(att.signInTime, att.signOutTime) : '-',
+          getStatusLabel(att.status),
+          att.notes || ''
+        ];
+      });
+      return { title: `Attendance — ${formatDate(selectedDate)}`, headers, rows, base: `Attendance_${selectedDate}` };
+    }
+    // Calendar (monthly grid)
+    const year = parseInt(selectedMonth.split('-')[0]);
+    const month = parseInt(selectedMonth.split('-')[1]);
+    const daysInMonth = new Date(year, month, 0).getDate();
+    const headers = ['Employee', ...Array.from({ length: daysInMonth }, (_, i) => String(i + 1))];
+    const emps = employees.filter(matchesDepartment)
+      .filter(e => selectedEmployee === 'all' ? true : e.id === selectedEmployee);
+    const rows = emps.map(emp => {
+      const cells = Array.from({ length: daysInMonth }, (_, i) => {
+        const date = `${year}-${String(month).padStart(2, '0')}-${String(i + 1).padStart(2, '0')}`;
+        if (isWeekend(date)) return '-';
+        if (holidays.find(h => h.date === date)) return 'X';
+        const recs = getAttendanceForDay(date, emp.id);
+        const rec = recs.length ? recs[0] : null;
+        if (!rec || !rec.status) return '';
+        return String(rec.status).charAt(0).toUpperCase();
+      });
+      return [emp.fullName, ...cells];
+    });
+    const monthLabel = new Date(selectedMonth + '-01').toLocaleDateString('en-IN', { year: 'numeric', month: 'long' });
+    return { title: `Attendance Register — ${monthLabel}`, headers, rows, base: `Attendance_${selectedMonth}` };
+  };
+
+  const exportAttendance = async (fmt) => {
+    try {
+      const { title, headers, rows, base } = buildExportData();
+      if (!rows.length) { window.toast?.warning?.('Nothing to export for this view.'); return; }
+      if (fmt === 'csv') exportToCsv(headers, rows, `${base}.csv`);
+      else if (fmt === 'xlsx') await exportToXlsx(headers, rows, `${base}.xlsx`, 'Attendance');
+      else await exportTableToPdf(title, headers, rows, `${base}.pdf`);
+    } catch (e) {
+      window.toast?.error?.('Export failed: ' + e.message);
+    }
   };
 
   const getMissingEmployees = () => {
@@ -871,6 +928,15 @@ function AttendanceTracker({ user }) {
           >
             🔄 Refresh Holidays
           </button>
+
+          {/* v5.4 — Export the current view (daily table or monthly register). */}
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', marginLeft: '8px',
+                        background: 'var(--bg-3)', padding: '4px 8px', borderRadius: '6px' }}>
+            <span style={{ fontSize: '12px', color: 'var(--text-2)' }}>📥 Export:</span>
+            <button className="btn btn-secondary" style={{ padding: '4px 8px', fontSize: '12px' }} onClick={() => exportAttendance('csv')}>CSV</button>
+            <button className="btn btn-secondary" style={{ padding: '4px 8px', fontSize: '12px' }} onClick={() => exportAttendance('xlsx')}>Excel</button>
+            <button className="btn btn-secondary" style={{ padding: '4px 8px', fontSize: '12px' }} onClick={() => exportAttendance('pdf')}>PDF</button>
+          </div>
         </div>
       </div>
 

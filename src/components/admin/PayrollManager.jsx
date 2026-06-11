@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { buildSalarySlipDoc, generatePdf } from '../../utils/pdf/pdfGenerator';
+import { exportToCsv, exportToXlsx, exportTableToPdf } from '../../utils/reportExport';
 import logoImage from '../../assets/logo.png';
 
 function PayrollManager() {
@@ -223,6 +224,76 @@ function PayrollManager() {
 
   const formatCurrency = (amount) => {
     return '₹' + parseFloat(amount).toLocaleString('en-IN', { maximumFractionDigits: 2, minimumFractionDigits: 2 });
+  };
+
+  const [exporting, setExporting] = useState(false);
+
+  // v5.4 — Payroll REGISTER export: computes pay for every employee in the
+  // selected department (or the whole company if none selected) for the chosen
+  // month, then exports CSV / Excel / PDF. Uses the same calc as the on-screen
+  // single-employee view.
+  const handleExportRegister = async (fmt) => {
+    setExporting(true);
+    try {
+      let emps = employees;
+      if (!selectedDepartment || emps.length === 0) {
+        const all = await window.electron.getEmployees();
+        emps = (all?.success && all.data) ? all.data : [];
+      }
+      if (!emps.length) { window.toast?.warning?.('No employees to export.'); return; }
+
+      const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
+      const endDate = new Date(year, month, 0).toISOString().split('T')[0];
+      const workingDays = getWorkingDaysInMonth(year, month);
+      const daysInMonth = new Date(year, month, 0).getDate();
+
+      const rows = [];
+      for (const emp of emps) {
+        const empRes = await window.electron.getEmployeeById(emp.id);
+        const e = empRes?.data || emp;
+        const baseSalary = e.baseSalary || e.base_salary || 0;
+        const attRes = await window.electron.getAttendanceHistory(emp.id, startDate, endDate);
+        const records = attRes?.success ? (attRes.data || []) : [];
+        let present = 0, absent = 0, leave = 0, half = 0;
+        for (let d = 1; d <= daysInMonth; d++) {
+          const date = new Date(Date.UTC(year, month - 1, d));
+          if (date.getUTCDay() === 0) continue; // skip Sundays
+          const ds = date.toISOString().split('T')[0];
+          const rec = records.find(r => r.date === ds);
+          const st = rec && rec.status ? rec.status.toLowerCase() : '';
+          if (!rec) absent++;
+          else if (st === 'present') present++;
+          else if (st === 'absent') absent++;
+          else if (st === 'leave') leave++;
+          else if (st === 'half-day') half++;
+          else absent++;
+        }
+        const dailyRate = workingDays ? baseSalary / workingDays : 0;
+        const gross = (present * dailyRate) + (leave * dailyRate) + (half * dailyRate * 0.5);
+        let paid = '';
+        try {
+          const ps = await window.electron.getPayrollPaidStatus(emp.id, month, year);
+          paid = ps?.success && ps.data.isPaid ? 'Paid' : 'Unpaid';
+        } catch (_) {}
+        rows.push([
+          e.fullName || e.full_name || emp.fullName || '',
+          baseSalary.toFixed(2), workingDays, present, leave, half, absent,
+          dailyRate.toFixed(2), gross.toFixed(2), gross.toFixed(2), paid
+        ]);
+      }
+
+      const headers = ['Employee', 'Base Salary', 'Working Days', 'Present', 'Leave', 'Half Day', 'Absent', 'Daily Rate', 'Gross', 'Net', 'Status'];
+      const monthName = new Date(2000, month - 1).toLocaleString('en-IN', { month: 'long' });
+      const base = `Payroll_Register_${monthName}_${year}`;
+      const title = `Payroll Register — ${monthName} ${year}`;
+      if (fmt === 'csv') exportToCsv(headers, rows, `${base}.csv`);
+      else if (fmt === 'xlsx') await exportToXlsx(headers, rows, `${base}.xlsx`, 'Payroll');
+      else await exportTableToPdf(title, headers, rows, `${base}.pdf`);
+    } catch (e) {
+      window.toast?.error?.('Export failed: ' + e.message);
+    } finally {
+      setExporting(false);
+    }
   };
 
   // Build and download the same payslip as a styled PDF (instead of opening
@@ -701,6 +772,19 @@ function PayrollManager() {
         >
           {loading ? 'Calculating...' : 'Calculate Payroll'}
         </button>
+
+        {/* v5.4 — Payroll register export (all employees for the month). */}
+        <div style={{ marginTop: '12px', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          <span style={{ fontSize: '13px', color: 'var(--text-2)' }}>
+            📥 Export payroll register ({new Date(2000, month - 1).toLocaleString('en-IN', { month: 'long' })} {year}):
+          </span>
+          <button className="btn btn-secondary" disabled={exporting} style={{ padding: '6px 12px', fontSize: '12px' }} onClick={() => handleExportRegister('csv')}>{exporting ? '…' : 'CSV'}</button>
+          <button className="btn btn-secondary" disabled={exporting} style={{ padding: '6px 12px', fontSize: '12px' }} onClick={() => handleExportRegister('xlsx')}>Excel</button>
+          <button className="btn btn-secondary" disabled={exporting} style={{ padding: '6px 12px', fontSize: '12px' }} onClick={() => handleExportRegister('pdf')}>PDF</button>
+          <span style={{ fontSize: '11px', color: 'var(--text-3, #6b7280)' }}>
+            {selectedDepartment ? '(selected department)' : '(all employees)'}
+          </span>
+        </div>
       </div>
 
       {/* Payroll Details */}
