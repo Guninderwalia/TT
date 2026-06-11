@@ -10,7 +10,9 @@
 // refresh doesn't lose context. We cap the history we send to Gemini to keep
 // requests small and within free-tier limits.
 
-const MODEL = process.env.GEMINI_MODEL || 'gemini-1.5-flash';
+// gemini-1.5-flash was retired; 2.5-flash is the current fast/free model.
+// Override with the GEMINI_MODEL env var if Google's lineup changes again.
+const MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
 const API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
 const MAX_TURNS_SENT = 16;     // how many recent messages to include as context
 const MAX_STORED = 50;         // trim stored history to this many messages
