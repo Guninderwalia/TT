@@ -25,6 +25,10 @@ const SYSTEM_PROMPT =
   "(attendance, sign in/out, breaks, leave requests, payroll, performance " +
   "reviews, documents) and general workplace/productivity questions. " +
   "Be concise, warm, and practical. Use short paragraphs or bullet points. " +
+  "You can look things up on the live internet (via Google Search) for " +
+  "current information like weather, news, travel, public holidays, or general " +
+  "facts — do so when it helps, and mention when an answer is based on a web " +
+  "search. " +
   "You do NOT have live access to the company's database, so never invent " +
   "specific figures, names, salaries, or records — if asked for personal data, " +
   "tell the user where in the app to find it. Do not give legal, tax, or " +
@@ -68,6 +72,9 @@ async function callGemini(apiKey, history) {
   const body = {
     systemInstruction: { role: 'system', parts: [{ text: SYSTEM_PROMPT }] },
     contents,
+    // v5.2 — Google Search grounding gives Pulse live internet access
+    // (weather, news, current facts) without any extra API integrations.
+    tools: [{ google_search: {} }],
     generationConfig: { temperature: 0.6, maxOutputTokens: 800 }
   };
 
@@ -82,17 +89,30 @@ async function callGemini(apiKey, history) {
     let detail = '';
     try { const j = await resp.json(); detail = j?.error?.message || ''; } catch (_) {}
     if (resp.status === 429) throw new Error('Ask Pulse is busy right now (rate limit) — please try again in a moment.');
+    if (resp.status === 503) throw new Error('Ask Pulse is briefly overloaded — please try again in a few seconds.');
     if (resp.status === 400 && /API key/i.test(detail)) throw new Error('The Gemini API key looks invalid. Please check the GEMINI_API_KEY secret.');
     throw new Error(detail || `Gemini request failed (HTTP ${resp.status})`);
   }
 
   const data = await resp.json();
   const cand = data?.candidates?.[0];
-  const text = cand?.content?.parts?.map(p => p.text).filter(Boolean).join('\n').trim();
+  let text = cand?.content?.parts?.map(p => p.text).filter(Boolean).join('\n').trim();
   if (!text) {
     if (cand?.finishReason === 'SAFETY') return "I can't help with that one. Try rephrasing, or ask me something else about Task Tango Pulse.";
     return "Sorry — I couldn't come up with a reply just now. Please try again.";
   }
+  // If the answer was grounded in a web search, append the top source links so
+  // the user can see where it came from.
+  try {
+    const chunks = cand?.groundingMetadata?.groundingChunks || [];
+    const sources = chunks
+      .map(c => c?.web?.uri && ({ title: c.web.title || c.web.uri, uri: c.web.uri }))
+      .filter(Boolean)
+      .slice(0, 3);
+    if (sources.length) {
+      text += '\n\n🔎 Sources: ' + sources.map(s => s.title).join(' · ');
+    }
+  } catch (_) { /* grounding metadata is best-effort */ }
   return text;
 }
 
