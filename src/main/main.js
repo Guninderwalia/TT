@@ -470,6 +470,11 @@ app.on('ready', async () => {
     const { initializeDatabase } = require('../db/init');
     db = await initializeDatabase();
     console.log('[DB] ✓ Database initialized successfully');
+    // v5.2 — expose db so the HTTP layer can validate session tokens for any
+    // LAN browsers hitting this desktop instance. We intentionally do NOT set
+    // global.__webMode here: a desktop install serves the trusted office LAN,
+    // so the per-user authz guard stays permissive (web/Fly mode sets both).
+    global.__db = db;
   } catch (error) {
     console.error('[DB] Failed to initialize database:', error);
     console.log('[DB] Continuing with demo authentication and store-based handlers...');

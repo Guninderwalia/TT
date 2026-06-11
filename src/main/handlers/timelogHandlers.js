@@ -1,5 +1,6 @@
 const { v4: uuidv4 } = require('uuid');
 const { writeAudit } = require('./_auditHelper');
+const { canAccessUser, denied } = require('./_authz');
 // Pulse v2 — use the office timezone for "today" so the live status snapshot
 // matches the date that breaks / sign-ins are stamped under. Using raw UTC
 // here made the dashboard read the PREVIOUS office day during the early-
@@ -182,6 +183,7 @@ function register(ipcMain, db) {
   // Range query — used by AdminPerformanceReview for consistency/lateness.
   ipcMain.handle('timelogging:getTimeLogs', async (event, { userId, startDate, endDate }) => {
     try {
+      if (!(await canAccessUser(db, event, userId))) return denied();
       const rows = await db.all(
         `SELECT * FROM time_logs
           WHERE user_id = ? AND date BETWEEN ? AND ?
@@ -255,6 +257,7 @@ function register(ipcMain, db) {
   // Month query — used by personal time logging view.
   ipcMain.handle('timelogging:getUserTimeLogs', async (event, { userId, month, year }) => {
     try {
+      if (!(await canAccessUser(db, event, userId))) return denied();
       // month is 1-12 from the renderer
       const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
       const endDate   = `${year}-${String(month).padStart(2, '0')}-31`;

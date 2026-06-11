@@ -239,6 +239,12 @@ async function applyTimezone(db) {
   try {
     db = await initializeDatabase();
     console.log('[SERVER] ✓ Database ready');
+    // v5.2 — expose the db + mark web mode so the HTTP layer (webServer.js)
+    // can validate session tokens on each /api/invoke request, and so the
+    // authorization helpers enforce per-user access only in the shared
+    // multi-user web server (desktop stays single-user/trusted).
+    global.__db = db;
+    global.__webMode = true;
   } catch (err) {
     console.error('[SERVER] DB init failed:', err);
     process.exit(1);

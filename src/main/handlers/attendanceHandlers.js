@@ -1,6 +1,7 @@
 const { v4: uuidv4 } = require('uuid');
 const { format, differenceInHours, isPublicHoliday } = require('date-fns');
 const { writeAudit } = require('./_auditHelper');
+const { canAccessUser, denied } = require('./_authz');
 // v4.3: Always stamp times in the office timezone (default Europe/London)
 // instead of the OS's local zone. Stops a laptop set to AEST from writing
 // "19:00" for a 09:00 UK sign-in. Optional internet-time offset is applied
@@ -267,6 +268,7 @@ function register(ipcMain, db) {
 
   ipcMain.handle('attendance:getHistory', async (event, { userId, startDate, endDate }) => {
     try {
+      if (!(await canAccessUser(db, event, userId))) return denied();
       const records = await db.all(
         `SELECT * FROM attendance
          WHERE user_id = ? AND date BETWEEN ? AND ?

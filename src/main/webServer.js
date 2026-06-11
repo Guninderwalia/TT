@@ -85,6 +85,33 @@ function patchIpcMain(ipcMain) {
  * Starts the Express server that exposes the registered handlers
  * as HTTP POST endpoints.
  */
+// v5.2 — Resolve the authenticated caller for an HTTP request.
+// A valid, non-revoked session token (x-session-token) wins and yields the
+// authoritative user_id from user_sessions. If no token is present, or it
+// can't be validated, we fall back to the x-user-id header so existing
+// sessions and the login request itself are never locked out.
+async function resolveCallerId(req) {
+  const headerId = req.headers['x-user-id'] || null;
+  const token = req.headers['x-session-token'] || null;
+  const db = global.__db;
+  if (token && db) {
+    try {
+      const row = await db.get(
+        `SELECT user_id FROM user_sessions WHERE token = ? AND revoked_at IS NULL`,
+        [token]
+      );
+      if (row && row.user_id) {
+        // Best-effort liveness stamp; never block the request on it.
+        Promise.resolve(
+          db.run(`UPDATE user_sessions SET last_seen_at = CURRENT_TIMESTAMP WHERE token = ?`, [token])
+        ).catch(() => {});
+        return row.user_id;
+      }
+    } catch (_) { /* fall through to header */ }
+  }
+  return headerId;
+}
+
 function startServer(port = 3002) {
   const app = express();
   const path = require('path');
@@ -191,10 +218,17 @@ function startServer(port = 3002) {
     }
 
     try {
+      // v5.2 — Resolve the caller's identity. Prefer a VALIDATED session token
+      // (x-session-token) over the client-claimed x-user-id header, which can
+      // be spoofed. When a valid token is present its user_id is authoritative;
+      // otherwise we fall back to the header so existing logged-in clients (and
+      // the very first auth:login request, which has no token yet) keep working.
+      const resolvedId = await resolveCallerId(req);
+
       // Create a mock event object similar to what IPC provides
       const mockEvent = {
         sender: {
-          id: req.headers['x-user-id'] || null,
+          id: resolvedId,
           send: () => {} // No-op for HTTP
         }
       };
