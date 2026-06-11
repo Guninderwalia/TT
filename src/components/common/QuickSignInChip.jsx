@@ -67,6 +67,13 @@ function QuickSignInChip({ user, hideForRoles = [] }) {
 
   const handleSignOut = async () => {
     if (loading || signedOut || !signedIn) return;
+    // Confirm before signing out — this chip is small and easy to mis-click.
+    const confirmed = window.confirm(
+      '⚠️ Are you sure you want to Sign Out for the day?\n\n' +
+      'This stamps your end-of-day time and closes today\'s attendance.\n\n' +
+      'Click OK to confirm, or Cancel to stay signed in.'
+    );
+    if (!confirmed) return;
     setLoading(true);
     try {
       const r = await window.electron.signOut(myId);

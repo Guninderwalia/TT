@@ -116,7 +116,7 @@ function ProbationDepositPanel({ userId, canManage = false, currentUserId, onCha
       </div>
 
       <p style={{ margin: '0 0 12px', fontSize: 12, color: 'var(--text-2, #9ca3af)' }}>
-        Your first {monthsInWindow} month{monthsInWindow === 1 ? '' : 's'}' salary {isHeld ? 'is being held' : 'was held'} as a refundable security deposit. {isHeld ? 'It is released back to you after probation is successfully completed.' : 'Released to you after probation completed.'}
+        Your first {monthsInWindow} month{monthsInWindow === 1 ? '' : 's'}' salary {isHeld ? 'is being held' : 'was held'} as a refundable security deposit.
       </p>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>

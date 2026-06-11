@@ -462,6 +462,92 @@ function register(ipcMain, db) {
     }
   });
 
+  // v4.7.4 — Admin / MD can reverse an accidental Sign Out for any
+  // employee on any date. Clears sign_out_time, hours_worked and the
+  // early-departure flags on the attendance row so the user appears as
+  // "signed in but not yet signed out" again — and mirrors the change to
+  // time_logs (clears end_time + recomputed totals) so the Time Logging
+  // and performance views stay consistent.
+  ipcMain.handle('attendance:reverseSignOut', async (event, { userId, date, currentUserId } = {}) => {
+    try {
+      if (!userId || !date) {
+        return { success: false, message: 'userId and date are required' };
+      }
+      if (!currentUserId) {
+        return { success: false, message: 'Not authenticated' };
+      }
+      // Authorize: only Admin / Administrator / MD can reverse a sign-out.
+      const caller = await db.get(
+        `SELECT u.id, r.name AS role_name
+           FROM users u LEFT JOIN roles r ON u.role_id = r.id
+          WHERE u.id = ?`,
+        [currentUserId]
+      );
+      const role = ((caller && caller.role_name) || '').toLowerCase();
+      const allowed = ['admin', 'administrator', 'md', 'managing director'].includes(role);
+      if (!allowed) {
+        return { success: false, message: 'Only Admin or MD can reverse a Sign Out' };
+      }
+
+      const row = await db.get(
+        'SELECT * FROM attendance WHERE user_id = ? AND date = ?',
+        [userId, date]
+      );
+      if (!row) {
+        return { success: false, message: 'No attendance record found for that date' };
+      }
+      if (!row.sign_out_time) {
+        return { success: false, message: 'This employee has not signed out yet' };
+      }
+
+      await db.run(
+        `UPDATE attendance
+            SET sign_out_time = NULL,
+                hours_worked = NULL,
+                is_early_departure = 0,
+                early_departure_hours = 0,
+                updated_at = CURRENT_TIMESTAMP
+          WHERE id = ?`,
+        [row.id]
+      );
+
+      // Mirror to time_logs — clear end_time and the computed totals so the
+      // Time Logging view stops showing a closed day.
+      await db.run(
+        `UPDATE time_logs
+            SET end_time = NULL,
+                total_hours = NULL,
+                net_hours = NULL,
+                updated_at = CURRENT_TIMESTAMP
+          WHERE user_id = ? AND date = ?`,
+        [userId, date]
+      );
+
+      await writeAudit(db, currentUserId, {
+        action: 'ATTENDANCE_REVERSE_SIGN_OUT',
+        entityType: 'ATTENDANCE',
+        entityId: row.id,
+        oldValue: {
+          userId, date,
+          signOutTime: row.sign_out_time,
+          hoursWorked: row.hours_worked,
+          isEarlyDeparture: row.is_early_departure === 1
+        },
+        newValue: { userId, date, signOutTime: null, hoursWorked: null, isEarlyDeparture: false }
+      });
+
+      const updated = await db.get('SELECT * FROM attendance WHERE id = ?', [row.id]);
+      return {
+        success: true,
+        message: 'Sign Out reversed — employee is signed in again',
+        data: mapAttendanceOut(updated)
+      };
+    } catch (error) {
+      console.error('Reverse sign-out error:', error);
+      return { success: false, message: 'Failed to reverse Sign Out: ' + error.message };
+    }
+  });
+
   ipcMain.handle('attendance:markHalfDay', async (event, { attendanceId, currentUserId }) => {
     try {
       const before = await db.get('SELECT * FROM attendance WHERE id = ?', [attendanceId]);

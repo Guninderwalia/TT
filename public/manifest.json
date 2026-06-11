@@ -1,6 +1,6 @@
 {
-  "name": "TaskTango — HR & Employee Management",
-  "short_name": "TaskTango",
+  "name": "Task Tango Pulse — HR & Employee Management",
+  "short_name": "Task Tango Pulse",
   "description": "Sign in, log time, request leave, chat with your team, and view performance reviews — all in one place.",
   "start_url": "/",
   "scope": "/",

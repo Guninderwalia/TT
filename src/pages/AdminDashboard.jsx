@@ -135,7 +135,7 @@ function AdminDashboard({ user, onLogout }) {
             <Route path="/" element={<AdminOverview user={user} />} />
             <Route path="/employees/*" element={<EmployeeManager user={user} />} />
             <Route path="/departments/*" element={<DepartmentManager />} />
-            <Route path="/attendance/*" element={<AttendanceTracker />} />
+            <Route path="/attendance/*" element={<AttendanceTracker user={user} />} />
             <Route path="/holidays/*" element={<HolidayManagement />} />
             <Route path="/leave-approvals/*" element={<AdminLeaveApprovals user={user} />} />
             <Route path="/timelogging/*" element={<AdminTimeLogging />} />

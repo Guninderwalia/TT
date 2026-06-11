@@ -13,6 +13,11 @@ import {
   Filler
 } from 'chart.js';
 import { Doughnut, Bar, Line } from 'react-chartjs-2';
+// v4.7.9 — Show numeric counts directly on chart segments instead of forcing
+// users to hover for a tooltip. Registered as an opt-in plugin so the
+// cartesian (bar / line) charts aren't cluttered with floating numbers —
+// only the doughnut charts below set `plugins.datalabels.display = true`.
+import ChartDataLabels from 'chartjs-plugin-datalabels';
 
 ChartJS.register(
   CategoryScale,
@@ -24,7 +29,8 @@ ChartJS.register(
   Title,
   Tooltip,
   Legend,
-  Filler
+  Filler,
+  ChartDataLabels
 );
 
 const PALETTE = {
@@ -50,7 +56,31 @@ const baseOptions = {
   maintainAspectRatio: false,
   plugins: {
     legend: { labels: { color: TEXT_COLOR, font: { size: 12 } } },
-    title:  { display: false }
+    title:  { display: false },
+    // ChartDataLabels is registered globally so every chart sees it. Default
+    // it OFF so bar / line charts stay clean; doughnut charts opt in below.
+    datalabels: { display: false }
+  }
+};
+
+// v4.7.9 — Doughnut overlay: white number on each slice, but hide the label
+// when the slice is zero (avoids a row of "0"s when nothing has happened
+// today) or so small it would overflow.
+const doughnutOptions = {
+  ...baseOptions,
+  plugins: {
+    ...baseOptions.plugins,
+    datalabels: {
+      display: (ctx) => {
+        const v = ctx.dataset.data[ctx.dataIndex];
+        if (!v) return false;
+        const total = ctx.dataset.data.reduce((a, b) => a + (Number(b) || 0), 0);
+        return total > 0 && (v / total) >= 0.04; // hide labels on <4% slices
+      },
+      color: '#fff',
+      font: { weight: '700', size: 13 },
+      formatter: (value) => value
+    }
   }
 };
 
@@ -97,7 +127,7 @@ export function HeadcountChart({ employees = [], departments = [] }) {
           labels,
           datasets: [{ data, backgroundColor: colors.slice(0, labels.length), borderWidth: 0 }]
         }}
-        options={baseOptions}
+        options={doughnutOptions}
       />
     </ChartCard>
   );
@@ -126,7 +156,7 @@ export function AttendanceTodayChart({ attendanceRows = [], title = "Today's Att
             borderWidth: 0
           }]
         }}
-        options={baseOptions}
+        options={doughnutOptions}
       />
     </ChartCard>
   );
@@ -290,7 +320,7 @@ export function TeamLiveStatusChart({ teamRows = [], title = 'Team Status — Ri
           labels,
           datasets: [{ data, backgroundColor: colors, borderWidth: 0 }]
         }}
-        options={baseOptions}
+        options={doughnutOptions}
       />
     </ChartCard>
   );

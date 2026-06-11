@@ -54,6 +54,12 @@ async function runMigrations(db) {
     // Chat attachments — file/image attachments riding alongside text messages.
     await addAttachmentColumnsToChatMessages(db);
 
+    // v4.7.7 — WhatsApp-style read receipts. delivered_at = stamped the moment
+    // a recipient's SSE subscription receives the message. read_at = stamped
+    // when the recipient opens the conversation (or scrolls the message into
+    // view). Both nullable so legacy rows keep working.
+    await addReadReceiptColumnsToChatMessages(db);
+
     // v4.6 — User session tracking (login fingerprint, IP, UA) so a user
     // can see other devices logged into their account and revoke them.
     await createUserSessionsTableIfNeeded(db);
@@ -524,6 +530,41 @@ async function addAttachmentColumnsToChatMessages(db) {
     }
   } catch (error) {
     console.error('[MIGRATIONS] Error adding chat-attachment columns:', error.message);
+  }
+}
+
+// v4.7.7 — Read-receipt columns on chat_messages. Powers the WhatsApp-style
+// single / double / green-double tick UI:
+//
+//   delivered_at IS NULL                            → ✓   (sent, server has it)
+//   delivered_at IS NOT NULL, read_at IS NULL       → ✓✓  (delivered to peer)
+//   read_at IS NOT NULL                             → ✓✓ in green (peer read)
+//
+// All nullable so the migration is a pure additive change — text-only DM
+// flows keep working without backfill.
+async function addReadReceiptColumnsToChatMessages(db) {
+  try {
+    const tableExists = await db.get(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name='chat_messages'"
+    );
+    if (!tableExists) {
+      console.log('[MIGRATIONS] chat_messages missing — skipping read-receipt columns');
+      return;
+    }
+    const cols = await db.all("PRAGMA table_info(chat_messages)");
+    const has = (n) => cols.some(c => c.name === n);
+    const additions = [
+      ['delivered_at', 'DATETIME'],
+      ['read_at',      'DATETIME']
+    ];
+    for (const [col, def] of additions) {
+      if (!has(col)) {
+        await db.run(`ALTER TABLE chat_messages ADD COLUMN ${col} ${def}`);
+        console.log(`[MIGRATIONS] ✓ Added chat_messages.${col}`);
+      }
+    }
+  } catch (error) {
+    console.error('[MIGRATIONS] Error adding read-receipt columns:', error.message);
   }
 }
 

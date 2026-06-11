@@ -25,9 +25,9 @@ function Sidebar({ user, navItems, activeNav, onNavChange, onLogout }) {
     <div className="sidebar">
       <div className="logo-area">
         <div className="logo-row">
-          <img src={logoImage} alt="Task Tango" className="logo-image" />
+          <img src={logoImage} alt="Task Tango Pulse" className="logo-image" />
           <div className="logo-text">
-            <div className="logo-name">Task Tango</div>
+            <div className="logo-name">Task Tango Pulse</div>
             <div className="logo-tag">Financial Services</div>
           </div>
         </div>

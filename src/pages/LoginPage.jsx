@@ -75,9 +75,9 @@ function LoginPage({ onLogin }) {
         <div className="login-card">
           <div className="login-header">
             <div className="logo-circle">
-              <img src={logoImage} alt="Task Tango" className="logo-image-login" />
+              <img src={logoImage} alt="Task Tango Pulse" className="logo-image-login" />
             </div>
-            <h1>Task Tango</h1>
+            <h1>Task Tango Pulse</h1>
             <p className="subtitle">Financial Services HR Management System</p>
           </div>
 

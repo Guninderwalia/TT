@@ -1,7 +1,36 @@
 import React, { useState, useEffect } from 'react';
 import { getOfficeDate } from '../../utils/officeTime';
 
-function AttendanceTracker() {
+function AttendanceTracker({ user }) {
+  // v4.7.4 — Admin / MD can reverse an accidental Sign Out so the
+  // employee appears as still signed in. Gated server-side too.
+  const callerRole = ((user?.role_name || user?.roleName) || '').toLowerCase();
+  const canReverseSignOut = ['admin', 'administrator', 'md', 'managing director'].includes(callerRole);
+
+  const handleReverseSignOut = async (att) => {
+    const empName = getEmployeeName(att.userId);
+    if (!window.confirm(
+      `Reverse Sign Out for ${empName}?\n\n` +
+      `Their end-of-day time will be cleared and they'll appear as still signed in. ` +
+      `Use this only when the Sign Out was accidental.`
+    )) return;
+    try {
+      const res = await window.electron.reverseSignOut(att.userId, att.date, user?.id);
+      if (res?.success) {
+        window.toast?.success?.(res.message || 'Sign Out reversed');
+        if (viewMode === 'calendar') {
+          await loadMonthAttendance();
+        } else {
+          await loadAttendanceForDate();
+        }
+      } else {
+        window.toast?.error?.('Reverse failed: ' + (res?.message || 'unknown'));
+      }
+    } catch (e) {
+      window.toast?.error?.('Reverse failed: ' + e.message);
+    }
+  };
+
   const [selectedDate, setSelectedDate] = useState(getOfficeDate());
   const [attendance, setAttendance] = useState([]);
   const [employees, setEmployees] = useState([]);
@@ -1194,6 +1223,7 @@ function AttendanceTracker() {
                 <th>Hours Worked</th>
                 <th>Status</th>
                 <th>Notes</th>
+                {canReverseSignOut && <th>Actions</th>}
               </tr>
             </thead>
             <tbody>
@@ -1219,6 +1249,22 @@ function AttendanceTracker() {
                       </span>
                     </td>
                     <td>{att.notes || '-'}</td>
+                    {canReverseSignOut && (
+                      <td>
+                        {att.signOutTime ? (
+                          <button
+                            className="btn btn-secondary"
+                            style={{ padding: '4px 10px', fontSize: '12px' }}
+                            onClick={() => handleReverseSignOut(att)}
+                            title="Reverse this Sign Out (Admin/MD only)"
+                          >
+                            ↺ Reverse Sign Out
+                          </button>
+                        ) : (
+                          <span style={{ color: 'var(--text-2)', fontSize: '12px' }}>—</span>
+                        )}
+                      </td>
+                    )}
                   </tr>
                 );
               })}

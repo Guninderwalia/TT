@@ -172,6 +172,9 @@
     updateAttendanceStatus: (attendanceId, status, notes, signInTime, signOutTime) =>
       invoke('attendance:updateStatus', { attendanceId, status, notes, signInTime, signOutTime }),
     markHalfDay: (attendanceId) => invoke('attendance:markHalfDay', { attendanceId }),
+    // v4.7.4 — Admin / MD can reverse an accidental sign-out for any employee.
+    reverseSignOut: (userId, date) =>
+      invoke('attendance:reverseSignOut', { userId, date, currentUserId: cachedUserId() }),
 
     // Payroll
     getPayrollData: (userId, month, year) =>

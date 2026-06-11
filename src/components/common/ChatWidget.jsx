@@ -104,15 +104,52 @@ function ChatWidget({ user, onUnreadChange, mode = 'floating' }) {
   const myId = user?.id || user?.user_id || user?.userId || user?.uid;
 
   // ─────────────────────── WebRTC voice/video calling ───────────────────────
-  // Google's public STUN servers. Enough for office-LAN and most home
-  // connections. For tighter NAT scenarios a TURN server would need to be
-  // added here — left as a future enhancement so we don't take on a monthly
-  // bill or self-hosted infra today.
+  // v4.7.6 — When this app moved from the office LAN to the Fly.io web
+  // build, voice/video calls stopped connecting for most users. Reason:
+  // the old config only had Google's public STUN servers, which is enough
+  // for two machines on the same LAN (Electron desktop in the office) but
+  // fails for ~30% of internet-connected users sitting behind a symmetric
+  // NAT (most home routers, almost all mobile carriers). The ring goes
+  // through (that's just SSE signaling) but the media never connects.
+  //
+  // Fix in three parts:
+  //   1. Multiple STUN providers so NAT-traversal probing doesn't depend on
+  //      a single DNS resolution.
+  //   2. A free TURN relay fallback (Open Relay Project) for users behind
+  //      restrictive NATs. This is best-effort public infrastructure — for
+  //      a production rollout, plug in your own Twilio / Cloudflare Calls /
+  //      Metered / Xirsys credentials here (or via an env-var endpoint).
+  //   3. iceCandidatePoolSize so candidates are gathered ahead of time and
+  //      offers go out faster.
   const ICE_CONFIG = {
     iceServers: [
+      // STUN — discover the public IP / port mapping.
       { urls: 'stun:stun.l.google.com:19302' },
-      { urls: 'stun:stun1.l.google.com:19302' }
-    ]
+      { urls: 'stun:stun1.l.google.com:19302' },
+      { urls: 'stun:stun2.l.google.com:19302' },
+      { urls: 'stun:stun3.l.google.com:19302' },
+      { urls: 'stun:stun4.l.google.com:19302' },
+      { urls: 'stun:stun.cloudflare.com:3478' },
+      // TURN — relay media when peer-to-peer is blocked. Open Relay Project
+      // provides open credentials for community use. UDP first, then TCP on
+      // 443 as a final fallback for networks that block UDP entirely.
+      {
+        urls: 'turn:openrelay.metered.ca:80',
+        username: 'openrelayproject',
+        credential: 'openrelayproject'
+      },
+      {
+        urls: 'turn:openrelay.metered.ca:443',
+        username: 'openrelayproject',
+        credential: 'openrelayproject'
+      },
+      {
+        urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+        username: 'openrelayproject',
+        credential: 'openrelayproject'
+      }
+    ],
+    iceCandidatePoolSize: 10
   };
 
   // ─────────────────────────── Audio cues (v4.1) ───────────────────────────
@@ -281,11 +318,28 @@ function ChatWidget({ user, onUnreadChange, mode = 'floating' }) {
 
     pc.onconnectionstatechange = () => {
       const s = pc.connectionState;
+      console.log('[CALL] connectionState →', s);
       if (s === 'connected') setCallState('in-call');
       else if (s === 'failed' || s === 'disconnected' || s === 'closed') {
         // Peer dropped — clean up locally; no need to send hangup back.
+        if (s === 'failed') {
+          window.toast?.error?.(
+            'Call connection failed — likely a NAT/firewall blocking media. ' +
+            'A TURN server is needed for this network.'
+          );
+        }
         teardownCall();
       }
+    };
+
+    // v4.7.6 — Extra diagnostics so future call failures don't have to be
+    // guessed at. iceConnectionState narrates the NAT-traversal phase, and
+    // iceGatheringState confirms candidates were collected.
+    pc.oniceconnectionstatechange = () => {
+      console.log('[CALL] iceConnectionState →', pc.iceConnectionState);
+    };
+    pc.onicegatheringstatechange = () => {
+      console.log('[CALL] iceGatheringState →', pc.iceGatheringState);
     };
 
     return pc;
@@ -765,7 +819,37 @@ function ChatWidget({ user, onUnreadChange, mode = 'floating' }) {
       }
       handleRemoteHangup();
     };
+    // v4.7.7 — WhatsApp-style read receipts. The server fires these as the
+    // recipient's connection state changes:
+    //   message:delivered → at least one peer received the message via SSE
+    //   message:read      → the peer opened the conversation
+    // Both carry { conversationId, messageIds, deliveredAt / readAt }.
+    const onMessageDelivered = (e) => {
+      try {
+        const payload = JSON.parse(e.data);
+        const ids = new Set(payload.messageIds || []);
+        setMessages((prev) => prev.map(m =>
+          ids.has(m.id) && !m.deliveredAt
+            ? { ...m, deliveredAt: payload.deliveredAt }
+            : m
+        ));
+      } catch (_) { /* malformed event */ }
+    };
+    const onMessageRead = (e) => {
+      try {
+        const payload = JSON.parse(e.data);
+        const ids = new Set(payload.messageIds || []);
+        setMessages((prev) => prev.map(m =>
+          ids.has(m.id)
+            ? { ...m, readAt: payload.readAt, deliveredAt: m.deliveredAt || payload.readAt }
+            : m
+        ));
+      } catch (_) { /* malformed event */ }
+    };
+
     es.addEventListener('message:new', onMessage);
+    es.addEventListener('message:delivered', onMessageDelivered);
+    es.addEventListener('message:read',      onMessageRead);
     es.addEventListener('conversation:new', onConv);
     es.addEventListener('call:offer',  onCallOffer);
     es.addEventListener('call:answer', onCallAnswer);
@@ -1363,9 +1447,32 @@ function ChatWidget({ user, onUnreadChange, mode = 'floating' }) {
                               fontSize: '10px',
                               opacity: 0.7,
                               marginTop: '3px',
-                              textAlign: 'right'
+                              textAlign: 'right',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'flex-end',
+                              gap: '4px'
                             }}>
-                              {fmtTime(m.sentAt)}
+                              <span>{fmtTime(m.sentAt)}</span>
+                              {/* v4.7.7 — WhatsApp-style ticks, own messages only.
+                                  ✓   sent (server has it, peer offline)
+                                  ✓✓  grey — delivered to peer's open client
+                                  ✓✓  green — peer opened the conversation */}
+                              {mine && (
+                                m.readAt ? (
+                                  <span title={`Read ${fmtTime(m.readAt)}`}
+                                        style={{ color: '#4ade80', fontWeight: 700, letterSpacing: '-2px', opacity: 1 }}>
+                                    ✓✓
+                                  </span>
+                                ) : m.deliveredAt ? (
+                                  <span title={`Delivered ${fmtTime(m.deliveredAt)}`}
+                                        style={{ letterSpacing: '-2px' }}>
+                                    ✓✓
+                                  </span>
+                                ) : (
+                                  <span title="Sent">✓</span>
+                                )
+                              )}
                             </div>
                           </div>
                         </div>

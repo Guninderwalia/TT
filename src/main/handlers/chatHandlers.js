@@ -264,7 +264,11 @@ function register(ipcMain, db) {
       if (!member) return { success: false, message: 'Not a participant' };
 
       const params = [conversationId];
+      // v4.7.7 — include delivered_at + read_at so the renderer can paint the
+      // single / double / green-double tick state on initial load (not just
+      // after a live SSE event).
       let sql = `SELECT m.id, m.conversation_id, m.sender_id, m.content, m.sent_at,
+                        m.delivered_at, m.read_at,
                         m.attachment_path, m.attachment_name, m.attachment_size, m.attachment_mime,
                         u.full_name as sender_name, u.profile_picture_path as sender_picture
                  FROM chat_messages m
@@ -283,6 +287,8 @@ function register(ipcMain, db) {
           senderPicture: r.sender_picture,
           content: r.content,
           sentAt: r.sent_at,
+          deliveredAt: r.delivered_at || null,
+          readAt: r.read_at || null,
           attachmentPath: r.attachment_path,
           attachmentName: r.attachment_name,
           attachmentSize: r.attachment_size,
@@ -372,6 +378,9 @@ function register(ipcMain, db) {
         `SELECT full_name, profile_picture_path FROM users WHERE id = ?`,
         [userId]
       );
+      // v4.7.7 — Read-receipt fields default to null. delivered_at flips to
+      // "now" the moment we successfully push this message to a recipient's
+      // open SSE stream below; read_at is set later by chat:markRead.
       const messagePayload = {
         id,
         conversationId,
@@ -380,18 +389,42 @@ function register(ipcMain, db) {
         senderPicture: sender ? sender.profile_picture_path : null,
         content: trimmed,
         sentAt,
+        deliveredAt: null,
+        readAt: null,
         attachmentPath: attachmentRow?.path || null,
         attachmentName: attachmentRow?.name || null,
         attachmentSize: attachmentRow?.size || null,
         attachmentMime: attachmentRow?.mime || null
       };
-      // Broadcast to every other participant
+      // Broadcast to every other participant. If the recipient has at least
+      // one live SSE subscriber (open browser/desktop client), stamp
+      // delivered_at and tell the sender so their tick can flip to ✓✓.
       const otherParticipants = await db.all(
         `SELECT user_id FROM chat_participants WHERE conversation_id = ? AND user_id != ?`,
         [conversationId, userId]
       );
+      let deliveredAt = null;
       for (const p of otherParticipants) {
+        const wasDelivered = (_subscribers.get(p.user_id)?.size || 0) > 0;
         broadcast(p.user_id, 'message:new', messagePayload);
+        if (wasDelivered && !deliveredAt) deliveredAt = new Date().toISOString();
+      }
+      if (deliveredAt) {
+        try {
+          await db.run(
+            `UPDATE chat_messages SET delivered_at = ? WHERE id = ?`,
+            [deliveredAt, id]
+          );
+          messagePayload.deliveredAt = deliveredAt;
+          // Tell the sender's client(s) — their tick should flip to grey ✓✓.
+          broadcast(userId, 'message:delivered', {
+            conversationId,
+            messageIds: [id],
+            deliveredAt
+          });
+        } catch (e) {
+          console.warn('[CHAT] delivered_at stamp failed:', e.message);
+        }
       }
       // Also notify the sender's other open clients (multi-tab support)
       broadcast(userId, 'message:new', messagePayload);
@@ -448,6 +481,52 @@ function register(ipcMain, db) {
          WHERE conversation_id = ? AND user_id = ?`,
         [now, conversationId, userId]
       );
+
+      // v4.7.7 — Per-message read receipts.
+      //
+      // Find every message in this conversation that was sent by SOMEONE
+      // ELSE and hasn't been marked read yet, stamp read_at, then tell each
+      // original sender so their UI can flip those messages to the green
+      // double-tick. We group by sender so each notification only mentions
+      // messages that sender actually cares about.
+      try {
+        const unread = await db.all(
+          `SELECT id, sender_id FROM chat_messages
+            WHERE conversation_id = ?
+              AND sender_id != ?
+              AND read_at IS NULL`,
+          [conversationId, userId]
+        );
+        if (unread.length > 0) {
+          const ids = unread.map(r => r.id);
+          // SQLite IN(...) with a generated placeholder list.
+          const qs = ids.map(() => '?').join(',');
+          await db.run(
+            `UPDATE chat_messages
+                SET read_at = ?,
+                    delivered_at = COALESCE(delivered_at, ?)
+              WHERE id IN (${qs})`,
+            [now, now, ...ids]
+          );
+          // Group ids by sender for tidy broadcasts.
+          const bySender = new Map();
+          for (const row of unread) {
+            if (!bySender.has(row.sender_id)) bySender.set(row.sender_id, []);
+            bySender.get(row.sender_id).push(row.id);
+          }
+          for (const [senderId, messageIds] of bySender) {
+            broadcast(senderId, 'message:read', {
+              conversationId,
+              readerId: userId,
+              messageIds,
+              readAt: now
+            });
+          }
+        }
+      } catch (e) {
+        console.warn('[CHAT] read_at stamp failed:', e.message);
+      }
+
       return { success: true };
     } catch (error) {
       console.error('[CHAT] markRead error:', error);

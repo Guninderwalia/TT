@@ -41,6 +41,8 @@ function exposeElectronAPI() {
   updateAttendanceStatus: (attendanceId, status, notes, signInTime, signOutTime) =>
     ipcRenderer.invoke('attendance:updateStatus', { attendanceId, status, notes, signInTime, signOutTime }),
   markHalfDay: (attendanceId) => ipcRenderer.invoke('attendance:markHalfDay', { attendanceId }),
+  reverseSignOut: (userId, date, currentUserId) =>
+    ipcRenderer.invoke('attendance:reverseSignOut', { userId, date, currentUserId }),
 
   // Payroll
   getPayrollData: (userId, month, year) =>

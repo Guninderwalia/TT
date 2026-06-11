@@ -487,7 +487,49 @@ function register(ipcMain, db) {
 
   ipcMain.handle('auth:resetUserPassword', async (event, { userId }) => {
     try {
-      // Reset password to "password"
+      if (!userId) return { success: false, message: 'userId required' };
+
+      // v4.7.5 + v4.7.8 — Identity resolution in web mode.
+      //
+      // The Fly web server is ONE Node process serving every browser, so
+      // the module-scoped `currentUser` reflects whoever last logged in to
+      // *the server*, not the person whose browser is making this request.
+      // Previously this caused "Only Admin or MD can reset passwords" to
+      // be thrown at a real Admin because the role check ran against a
+      // recently-logged-in Lead's role instead.
+      //
+      // The reliable identity is the x-user-id header (set by the web shim
+      // from the browser's localStorage on every request, forwarded to
+      // event.sender.id by webServer.js). Prefer it; fall back to
+      // currentUser only for Electron desktop mode where the header isn't
+      // present.
+      const actorId = (event?.sender?.id) || (currentUser?.id) || null;
+
+      // Authorise: only Admin / Administrator / MD can reset another user's
+      // password. Previously the handler trusted the UI button, which meant
+      // a request with no logged-in caller would still try (and then fail
+      // on the audit FK because 'system' isn't a real user id).
+      if (!actorId) {
+        return { success: false, message: 'Not authenticated — please log in again' };
+      }
+      const caller = await db.get(
+        `SELECT u.id, r.name AS role_name
+           FROM users u LEFT JOIN roles r ON u.role_id = r.id
+          WHERE u.id = ?`,
+        [actorId]
+      );
+      const role = ((caller && caller.role_name) || '').toLowerCase();
+      const allowed = ['admin', 'administrator', 'md', 'managing director'].includes(role);
+      if (!allowed) {
+        return { success: false, message: 'Only Admin or MD can reset passwords' };
+      }
+
+      // Confirm the target exists before we hash anything.
+      const target = await db.get('SELECT id FROM users WHERE id = ?', [userId]);
+      if (!target) return { success: false, message: 'User not found' };
+
+      // Reset password to the default "password" and force a change on
+      // next login.
       const initialPasswordHash = await bcrypt.hash('password', 10);
 
       await db.run(
@@ -497,17 +539,23 @@ function register(ipcMain, db) {
         [initialPasswordHash, userId]
       );
 
-      // Log audit
-      await db.run(
-        `INSERT INTO audit_logs (id, user_id, action, entity_type, entity_id, timestamp)
-         VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
-        [uuidv4(), currentUser?.id || 'system', 'RESET_PASSWORD', 'User', userId]
-      );
+      // Audit — actorId is now guaranteed to be a real users.id, so the FK
+      // on audit_logs.user_id no longer trips.
+      try {
+        await db.run(
+          `INSERT INTO audit_logs (id, user_id, action, entity_type, entity_id, timestamp)
+           VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+          [uuidv4(), actorId, 'RESET_PASSWORD', 'User', userId]
+        );
+      } catch (auditErr) {
+        // Audit failure shouldn't roll back the actual reset — log and move on.
+        console.warn('[AUTH] reset-password audit insert failed:', auditErr.message);
+      }
 
-      return { success: true, message: 'Password reset successfully' };
+      return { success: true, message: 'Password reset to "password" — user must change it on next login' };
     } catch (error) {
       console.error('Reset password error:', error);
-      return { success: false, message: 'Failed to reset password' };
+      return { success: false, message: 'Failed to reset password: ' + error.message };
     }
   });
 

@@ -71,6 +71,16 @@ function AttendanceLogger({ user }) {
   };
 
   const handleSignOut = async () => {
+    // Confirmation guard to prevent accidental Sign Out clicks.
+    // Sign Out closes the day's attendance record, so we want the user
+    // to explicitly confirm before we hit the backend.
+    const confirmed = window.confirm(
+      '⚠️ Are you sure you want to Sign Out for the day?\n\n' +
+      'This will record your end-of-day time and close today\'s attendance. ' +
+      'You will not be able to undo this from your dashboard.\n\n' +
+      'Click OK to confirm Sign Out, or Cancel to stay signed in.'
+    );
+    if (!confirmed) return;
     try {
       const result = await window.electron.signOut(user?.id);
       if (result.success) {
