@@ -1,5 +1,11 @@
 # Task Tango Pulse — v2 Change Plan
 
+> ✅ **STATUS: ALL 12 ITEMS COMPLETE** on branch `pulse-v2` (build green, not deployed).
+> To go live: `git checkout main && git merge pulse-v2`, then `fly deploy`, then
+> `fly secrets set GEMINI_API_KEY=...` to switch on Ask Pulse.
+> Restore point if needed: `git reset --hard v1.0-prod-snapshot-2026-06-11`.
+
+
 **Branch:** `pulse-v2` (local only — nothing deploys until explicitly approved)
 **Restore point:** tag `v1.0-prod-snapshot-2026-06-11` + DB backup at `TaskTango-backups/2026-06-11/tasktango-PROD-2026-06-11.db`
 **Workflow:** build + test everything locally on this branch → review → then merge to `main` and `fly deploy`.
