@@ -348,7 +348,9 @@ export function TeamLiveStatusChart({ teamRows = [], title = 'Team Status — Ri
   );
 }
 
-// L4 — My hours logged, last 12 weeks (line)
+// L4 — My hours logged, last 12 weeks.
+// v5.1 — Now a STACKED BAR so break time is visible alongside worked hours:
+// each week shows "Worked" (net hours) with "Break" stacked on top.
 export function MyHoursChart({ timeLogs = [], weeks = 12, title = 'My Hours — Last 12 Weeks' }) {
   // Bucket each log into its Monday-anchored week.
   const mondayOf = (date) => {
@@ -361,44 +363,49 @@ export function MyHoursChart({ timeLogs = [], weeks = 12, title = 'My Hours — 
   };
   const isoDate = (d) => d.toISOString().split('T')[0];
 
-  const buckets = {};
+  const worked = {};
+  const breaks = {};
   for (const log of timeLogs) {
     const dateField = log.date || (log.start_time && String(log.start_time).slice(0, 10));
     if (!dateField) continue;
     const key = isoDate(mondayOf(dateField));
-    const hrs = Number(log.netHours ?? log.net_hours ?? log.totalHours ?? log.total_hours ?? 0);
-    if (!Number.isFinite(hrs)) continue;
-    buckets[key] = (buckets[key] || 0) + hrs;
+    const netHrs = Number(log.netHours ?? log.net_hours ?? log.totalHours ?? log.total_hours ?? 0);
+    const brkHrs = Number(log.breakDuration ?? log.break_duration ?? 0);
+    if (Number.isFinite(netHrs)) worked[key] = (worked[key] || 0) + netHrs;
+    if (Number.isFinite(brkHrs)) breaks[key] = (breaks[key] || 0) + brkHrs;
   }
 
   const today = mondayOf(new Date());
   const labels = [];
-  const data = [];
+  const workedData = [];
+  const breakData = [];
   for (let i = weeks - 1; i >= 0; i--) {
     const ws = new Date(today);
     ws.setDate(today.getDate() - i * 7);
     const key = isoDate(ws);
     labels.push(ws.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }));
-    data.push(Math.round((buckets[key] || 0) * 10) / 10);
+    workedData.push(Math.round((worked[key] || 0) * 10) / 10);
+    breakData.push(Math.round((breaks[key] || 0) * 10) / 10);
   }
-  const isEmpty = data.every(v => v === 0);
+  const isEmpty = workedData.every(v => v === 0) && breakData.every(v => v === 0);
+  const options = {
+    ...cartesianOptions,
+    scales: {
+      x: { ...cartesianOptions.scales.x, stacked: true },
+      y: { ...cartesianOptions.scales.y, stacked: true }
+    }
+  };
   return (
     <ChartCard title={title} isEmpty={isEmpty}>
-      <Line
+      <Bar
         data={{
           labels,
-          datasets: [{
-            label: 'Hours',
-            data,
-            borderColor: PALETTE.gold,
-            backgroundColor: PALETTE.gold + '40',
-            fill: true,
-            tension: 0.3,
-            pointRadius: 3,
-            pointBackgroundColor: PALETTE.gold
-          }]
+          datasets: [
+            { label: 'Worked', data: workedData, backgroundColor: PALETTE.gold,  stack: 'h' },
+            { label: 'Break',  data: breakData,  backgroundColor: PALETTE.purple, stack: 'h' }
+          ]
         }}
-        options={cartesianOptions}
+        options={options}
       />
     </ChartCard>
   );

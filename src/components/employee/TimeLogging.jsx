@@ -20,14 +20,12 @@ import { generatePdf } from '../../utils/pdf/pdfGenerator';
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 function TimeLogging({ user, canEdit = false }) {
-  // v2 — Only admins / leads / managers may delete activity-log events.
-  // Plain employees (role "User") can still ADD events but not delete them,
-  // so the audit trail of their day can't be quietly erased. Enforced
-  // server-side too (event:delete checks the caller's role).
+  // v5.1 — Only ADMINS / MD may delete activity-log events. Everyone else
+  // (leads, managers, employees) can ADD events but not delete them, so the
+  // audit trail of a day can't be quietly erased. Enforced server-side too
+  // (event:delete checks the caller's role).
   const _role = (user?.role_name || user?.role || '').toLowerCase();
-  const canDeleteEvents =
-    ['admin', 'administrator', 'md', 'managing director', 'lead', 'manager'].includes(_role) ||
-    user?.is_department_lead === 1 || user?.is_department_lead === true || user?.isLead === true;
+  const canDeleteEvents = ['admin', 'administrator', 'md', 'managing director'].includes(_role);
 
   const [selectedDate, setSelectedDate] = useState(getOfficeDate());
   const [timeLog, setTimeLog] = useState({

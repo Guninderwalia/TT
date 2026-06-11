@@ -116,6 +116,56 @@ async function initializeDatabase() {
       console.warn('[DB] Could not ensure Saturday Off leave type:', e.message);
     }
 
+    // v5.1 — Fail-safe "break-glass" admin account.
+    //
+    // Guarantees there is ALWAYS one working login with full admin access,
+    // even if every other admin gets locked out / deleted / password-changed.
+    // Runs on EVERY boot and is idempotent:
+    //   - creates the account if missing (recreated even if someone deletes it)
+    //   - force-resets its password, role, and active status every boot, so
+    //     the known credentials always work.
+    //
+    // Credentials come from env vars (Fly secrets) so the password is NOT in
+    // the source code:  FAILSAFE_EMAIL  and  FAILSAFE_PASSWORD.
+    // If they aren't set, we skip silently (no insecure default).
+    try {
+      const fsEmail = (process.env.FAILSAFE_EMAIL || '').trim().toLowerCase();
+      const fsPassword = process.env.FAILSAFE_PASSWORD || '';
+      if (fsEmail && fsPassword) {
+        // Highest-privilege role. Prefer Admin (the app's proven full-access
+        // role); fall back to MD / Administrator if Admin isn't present.
+        const role = await db.get(
+          `SELECT id FROM roles WHERE name IN ('Admin','Administrator','MD')
+            ORDER BY CASE name WHEN 'Admin' THEN 0 WHEN 'Administrator' THEN 1 ELSE 2 END LIMIT 1`
+        );
+        const dept = await db.get('SELECT id FROM departments LIMIT 1');
+        const hash = await bcrypt.hash(fsPassword, 10);
+        if (role) {
+          const existing = await db.get('SELECT id FROM users WHERE LOWER(email) = ?', [fsEmail]);
+          if (existing) {
+            // Force it back to a known-good state every boot.
+            await db.run(
+              `UPDATE users SET password_hash = ?, role_id = ?, is_department_lead = 1,
+                                is_first_login = 0, status = 'active', updated_at = CURRENT_TIMESTAMP
+                 WHERE id = ?`,
+              [hash, role.id, existing.id]
+            );
+            console.log(`[DB] ✓ Fail-safe admin ensured (${fsEmail})`);
+          } else {
+            await db.run(
+              `INSERT INTO users (id, username, password_hash, email, full_name, role_id,
+                                  department_id, is_department_lead, is_first_login, status)
+               VALUES (?, ?, ?, ?, ?, ?, ?, 1, 0, 'active')`,
+              [uuidv4(), 'failsafe', hash, fsEmail, 'Fail-safe Admin', role.id, dept ? dept.id : null]
+            );
+            console.log(`[DB] ✓ Fail-safe admin created (${fsEmail})`);
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('[DB] Could not ensure fail-safe admin:', e.message);
+    }
+
     return db;
   } catch (error) {
     console.error('Database initialization failed:', error);

@@ -76,11 +76,11 @@ function register(ipcMain, db) {
   });
 
   // Delete an event.
-  // v2 — Only admins / leads / managers may delete events; plain employees
-  // can add but not remove activity-log entries so their day can't be quietly
-  // rewritten. The trustworthy caller id is the x-user-id header (mirrored to
-  // event.sender.id by webServer.js); fall back to the passed currentUserId
-  // for Electron desktop mode.
+  // v5.1 — Only ADMINS / MD may delete events. Team leads, managers and plain
+  // employees can add activity-log entries but not remove them, so a day's
+  // record can't be quietly rewritten by anyone below admin. The trustworthy
+  // caller id is the x-user-id header (mirrored to event.sender.id by
+  // webServer.js); fall back to the passed currentUserId for Electron desktop.
   ipcMain.handle('event:delete', async (event, { eventId, currentUserId }) => {
     try {
       const actorId = (event?.sender?.id) || currentUserId || null;
@@ -88,17 +88,15 @@ function register(ipcMain, db) {
         return { success: false, message: 'Not authenticated' };
       }
       const caller = await db.get(
-        `SELECT u.is_department_lead, r.name AS role_name
+        `SELECT r.name AS role_name
            FROM users u LEFT JOIN roles r ON u.role_id = r.id
           WHERE u.id = ?`,
         [actorId]
       );
       const role = ((caller && caller.role_name) || '').toLowerCase();
-      const isPrivileged =
-        ['admin', 'administrator', 'md', 'managing director', 'lead', 'manager'].includes(role) ||
-        caller?.is_department_lead === 1;
+      const isPrivileged = ['admin', 'administrator', 'md', 'managing director'].includes(role);
       if (!isPrivileged) {
-        return { success: false, message: 'Only an admin or team lead can delete events' };
+        return { success: false, message: 'Only an admin can delete events' };
       }
 
       const before = await db.get('SELECT * FROM events WHERE id = ?', [eventId]);
