@@ -2,6 +2,7 @@ const { v4: uuidv4 } = require('uuid');
 const { differenceInCalendarDays } = require('date-fns');
 const { writeAudit } = require('./_auditHelper');
 const { canAccessUser, denied } = require('./_authz');
+const { getOfficeDate } = require('../../utils/officeTime');
 const path = require('path');
 const fs = require('fs');
 let _electronApp = null;
@@ -1065,7 +1066,7 @@ function register(ipcMain, db) {
   // ==========================================================================
   ipcMain.handle('leave:getUpcoming', async (event, { departmentId } = {}) => {
     try {
-      const today = new Date().toISOString().split('T')[0];
+      const today = getOfficeDate(); // office-zone "today" so upcoming-leave filtering matches stamped dates
       let sql = `SELECT lr.*, lt.name as leave_type_name,
                         u.full_name, u.department_id, d.name as department_name
                  FROM leave_requests lr

@@ -1,6 +1,7 @@
 const { v4: uuidv4 } = require('uuid');
 const bcrypt = require('bcryptjs');
 const Papa = require('papaparse');
+const { getOfficeDate } = require('../../utils/officeTime');
 
 /**
  * Convert camelCase to snake_case
@@ -194,7 +195,7 @@ function register(ipcMain, db) {
       // If no employment records exist, create a default one
       if (employee && !employee.employment_record_id) {
         const empRecordId = uuidv4();
-        const today = new Date().toISOString().split('T')[0];
+        const today = getOfficeDate();
         console.log('[EMPLOYEE] Creating default employment record for user:', id);
         await db.run(
           `INSERT INTO employment_records (id, user_id, start_date, employment_type, base_salary, is_probation)
@@ -314,7 +315,7 @@ function register(ipcMain, db) {
 
       // ---- Employment record ----
       // Form sends `joiningDate`, not `startDate`. Default to today if missing.
-      const startDate = data.joiningDate || data.startDate || new Date().toISOString().split('T')[0];
+      const startDate = data.joiningDate || data.startDate || getOfficeDate();
       const employmentType = data.employmentType || (data.probationCompleted ? 'Permanent' : 'Probation');
       const isProbation = data.probationCompleted ? 0 : 1;
       const baseSalary = data.baseSalary ? parseFloat(data.baseSalary) : 0;
@@ -648,7 +649,7 @@ function register(ipcMain, db) {
           await db.run(
             `INSERT INTO employment_records (id, user_id, start_date, employment_type, is_probation, start_time, end_time)
              VALUES (?, ?, ?, ?, ?, ?, ?)`,
-            [empRecordId, id, joiningDate || new Date().toISOString().split('T')[0], 'Permanent', 0, startTime || '09:00', endTime || '18:00']
+            [empRecordId, id, joiningDate || getOfficeDate(), 'Permanent', 0, startTime || '09:00', endTime || '18:00']
           );
           console.log('[EMPLOYEE] Created new employment_records');
         }

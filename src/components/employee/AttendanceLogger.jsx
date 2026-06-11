@@ -5,6 +5,7 @@ import React, { useState, useEffect } from 'react';
 // silently "reverts" because the freshly-written row doesn't match the
 // UTC date the renderer is asking for.
 import { getOfficeDate } from '../../utils/officeTime';
+import { formatTime12h, formatDateLong } from '../../utils/dateTime';
 
 function AttendanceLogger({ user }) {
   const [attendance, setAttendance] = useState([]);
@@ -100,24 +101,9 @@ function AttendanceLogger({ user }) {
   // The backend now stores sign-in/out as "HH:MM:SS" (TIME column), not as
   // ISO timestamps. Detect that case and format directly; fall back to Date
   // parsing for any legacy ISO strings still in the data.
-  const formatTime = (value) => {
-    if (!value) return '-';
-    if (typeof value === 'string' && /^\d{1,2}:\d{2}(:\d{2})?$/.test(value)) {
-      const [h, m] = value.split(':').map(Number);
-      const period = h >= 12 ? 'PM' : 'AM';
-      const hour12 = ((h + 11) % 12) + 1;
-      return `${hour12}:${String(m).padStart(2, '0')} ${period}`;
-    }
-    const date = new Date(value);
-    if (isNaN(date.getTime())) return value;
-    return date.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
-  };
-
-  const formatDate = (dateString) => {
-    if (!dateString) return '-';
-    const date = new Date(dateString + 'T00:00:00');
-    return date.toLocaleDateString('en-IN', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
-  };
+  // v5.2 — delegate to the shared time-string-aware formatters.
+  const formatTime = formatTime12h;
+  const formatDate = formatDateLong;
 
   // Works for either HH:MM:SS strings or ISO timestamps.
   const timeToMinutes = (value) => {

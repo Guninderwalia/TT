@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getOfficeDate } from '../../utils/officeTime';
+import { formatTime12h, formatDateLong } from '../../utils/dateTime';
 
 function AttendanceTracker({ user }) {
   // v4.7.4 — Admin / MD can reverse an accidental Sign Out so the
@@ -278,28 +279,10 @@ function AttendanceTracker({ user }) {
     return emp ? emp.fullName : 'Unknown';
   };
 
-  const formatTime = (value) => {
-    if (!value) return '-';
-    // The DB stores sign-in/out as "HH:MM:SS" (or "HH:MM") TIME strings, not
-    // ISO datetimes. new Date("09:00:00") is Invalid Date — which is why the
-    // table view showed "Invalid Date". Detect the time-string form and format
-    // it directly; fall back to Date parsing only for legacy ISO values.
-    if (typeof value === 'string' && /^\d{1,2}:\d{2}(:\d{2})?$/.test(value)) {
-      const [h, m] = value.split(':').map(Number);
-      const period = h >= 12 ? 'PM' : 'AM';
-      const hour12 = ((h + 11) % 12) + 1;
-      return `${hour12}:${String(m).padStart(2, '0')} ${period}`;
-    }
-    const date = new Date(value);
-    if (isNaN(date.getTime())) return '-';
-    return date.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
-  };
-
-  const formatDate = (dateString) => {
-    if (!dateString) return '-';
-    const date = new Date(dateString + 'T00:00:00');
-    return date.toLocaleDateString('en-IN', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
-  };
+  // v5.2 — delegate to the shared, time-string-aware formatters (see
+  // src/utils/dateTime.js) so there's one canonical implementation.
+  const formatTime = formatTime12h;
+  const formatDate = formatDateLong;
 
   const getHoursWorked = (signIn, signOut) => {
     // Use the format-aware helper so this works whether the row holds

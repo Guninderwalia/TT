@@ -1,4 +1,5 @@
 const { v4: uuidv4 } = require('uuid');
+const { getOfficeDate } = require('../../utils/officeTime');
 
 function register(ipcMain, db) {
   console.log('[DEPOSIT] Registering deposit:getAll');
@@ -266,7 +267,7 @@ function register(ipcMain, db) {
         return { success: true, message: 'Deposit was already released', data: before };
       }
 
-      const today = new Date().toISOString().split('T')[0];
+      const today = getOfficeDate();
       await db.run(
         `UPDATE probation_deposits
             SET status = 'released',
