@@ -60,6 +60,15 @@ async function runMigrations(db) {
     // view). Both nullable so legacy rows keep working.
     await addReadReceiptColumnsToChatMessages(db);
 
+    // Pulse v2 — let one leave type deduct from another type's balance.
+    // Used by "Saturday Off", which deducts from Annual Leave rather than
+    // carrying its own allowance.
+    await addDeductsFromTypeColumnToLeaveTypes(db);
+
+    // Pulse v2 — optional supporting-document attachment on leave requests
+    // (e.g. medical note). All nullable + additive.
+    await addAttachmentColumnsToLeaveRequests(db);
+
     // v4.6 — User session tracking (login fingerprint, IP, UA) so a user
     // can see other devices logged into their account and revoke them.
     await createUserSessionsTableIfNeeded(db);
@@ -565,6 +574,53 @@ async function addReadReceiptColumnsToChatMessages(db) {
     }
   } catch (error) {
     console.error('[MIGRATIONS] Error adding read-receipt columns:', error.message);
+  }
+}
+
+// Pulse v2 — `deducts_from_type_id` on leave_types. When set, requests of this
+// type check/deduct the *referenced* type's balance instead of their own. This
+// lets "Saturday Off" appear as its own filterable leave type while still
+// consuming the employee's Annual Leave allowance. Nullable + additive.
+async function addDeductsFromTypeColumnToLeaveTypes(db) {
+  try {
+    const exists = await db.get(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name='leave_types'"
+    );
+    if (!exists) return;
+    const cols = await db.all("PRAGMA table_info(leave_types)");
+    if (!cols.some(c => c.name === 'deducts_from_type_id')) {
+      await db.run('ALTER TABLE leave_types ADD COLUMN deducts_from_type_id TEXT');
+      console.log('[MIGRATIONS] ✓ Added leave_types.deducts_from_type_id');
+    }
+  } catch (error) {
+    console.error('[MIGRATIONS] Error adding deducts_from_type_id:', error.message);
+  }
+}
+
+// Pulse v2 — attachment columns on leave_requests so employees can attach a
+// supporting document (medical note, etc.) when applying for leave. Nullable.
+async function addAttachmentColumnsToLeaveRequests(db) {
+  try {
+    const exists = await db.get(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name='leave_requests'"
+    );
+    if (!exists) return;
+    const cols = await db.all("PRAGMA table_info(leave_requests)");
+    const has = (n) => cols.some(c => c.name === n);
+    const additions = [
+      ['attachment_path', 'TEXT'],
+      ['attachment_name', 'TEXT'],
+      ['attachment_size', 'INTEGER'],
+      ['attachment_mime', 'TEXT']
+    ];
+    for (const [col, def] of additions) {
+      if (!has(col)) {
+        await db.run(`ALTER TABLE leave_requests ADD COLUMN ${col} ${def}`);
+        console.log(`[MIGRATIONS] ✓ Added leave_requests.${col}`);
+      }
+    }
+  } catch (error) {
+    console.error('[MIGRATIONS] Error adding leave attachment columns:', error.message);
   }
 }
 

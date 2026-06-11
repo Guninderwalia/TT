@@ -92,6 +92,30 @@ async function initializeDatabase() {
       console.warn('[DB] Could not clean up legacy leave types:', e.message);
     }
 
+    // Pulse v2 — ensure the "Saturday Off" leave type exists and points its
+    // deduction at Annual Leave. Runs on EVERY boot (not just fresh DBs)
+    // because the seed functions above only run on a brand-new database, but
+    // existing production DBs still need this type added. Idempotent.
+    try {
+      const annual = await db.get("SELECT id FROM leave_types WHERE name = 'Annual Leave'");
+      if (annual) {
+        const satOff = await db.get("SELECT id, deducts_from_type_id FROM leave_types WHERE name = 'Saturday Off'");
+        if (!satOff) {
+          await db.run(
+            'INSERT INTO leave_types (id, name, annual_entitlement, description, deducts_from_type_id) VALUES (?, ?, ?, ?, ?)',
+            [uuidv4(), 'Saturday Off', 0, 'Take a working Saturday off. Deducts from your Annual Leave balance.', annual.id]
+          );
+          console.log('[DB] ✓ Seeded "Saturday Off" leave type (deducts from Annual Leave)');
+        } else if (!satOff.deducts_from_type_id) {
+          // Repair an existing row that predates the deducts-from link.
+          await db.run('UPDATE leave_types SET deducts_from_type_id = ? WHERE id = ?', [annual.id, satOff.id]);
+          console.log('[DB] ✓ Linked "Saturday Off" → Annual Leave deduction');
+        }
+      }
+    } catch (e) {
+      console.warn('[DB] Could not ensure Saturday Off leave type:', e.message);
+    }
+
     return db;
   } catch (error) {
     console.error('Database initialization failed:', error);

@@ -58,8 +58,10 @@ function exposeElectronAPI() {
     ipcRenderer.invoke('leave:request', {
       leaveTypeId, startDate, endDate, reason, userId,
       isHalfDay: opts.isHalfDay === true,
-      halfDaySession: opts.halfDaySession || null
+      halfDaySession: opts.halfDaySession || null,
+      attachment: opts.attachment || null
     }),
+  readLeaveAttachment: (attachmentPath) => ipcRenderer.invoke('leave:readAttachment', attachmentPath),
   getLeaveBalance: (userId) => ipcRenderer.invoke('leave:getBalance', { userId }),
   getLeaveRequests: (userId) => ipcRenderer.invoke('leave:getRequests', { userId }),
   // Rollover-policy admin surface

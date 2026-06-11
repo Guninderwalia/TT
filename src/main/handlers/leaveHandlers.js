@@ -1,6 +1,27 @@
 const { v4: uuidv4 } = require('uuid');
 const { differenceInCalendarDays } = require('date-fns');
 const { writeAudit } = require('./_auditHelper');
+const path = require('path');
+const fs = require('fs');
+let _electronApp = null;
+try { _electronApp = require('electron').app; } catch (_) { /* server mode */ }
+
+// Pulse v2 — supporting-document attachments for leave requests live here.
+// In the web/server build electron.app is unavailable, so fall back to the
+// configured data dir (USER_DATA_PATH on Fly) or the OS temp dir.
+const MAX_LEAVE_ATTACHMENT_BYTES = 10 * 1024 * 1024; // 10 MB
+function leaveAttachmentsDir() {
+  const base = (_electronApp && _electronApp.getPath && _electronApp.getPath('userData'))
+    || process.env.USER_DATA_PATH
+    || process.cwd();
+  const dir = path.join(base, 'leave-attachments');
+  try { fs.mkdirSync(dir, { recursive: true }); } catch (_) {}
+  return dir;
+}
+function safeExt(filename) {
+  const m = String(filename || '').match(/\.([A-Za-z0-9]{1,8})$/);
+  return m ? `.${m[1].toLowerCase()}` : '';
+}
 
 /**
  * Apply the year-end carry-forward policy for ONE (user, leave_type) pair.
@@ -195,7 +216,21 @@ const calculateLeaveAllocation = (joiningDate, year = new Date().getFullYear(), 
 };
 
 function register(ipcMain, db) {
-  ipcMain.handle('leave:request', async (event, { leaveTypeId, startDate, endDate, reason, userId, isHalfDay, halfDaySession }) => {
+  // Pulse v2 — resolve the leave type whose BALANCE a request should affect.
+  // Most types deduct from themselves, but "Saturday Off" sets
+  // deducts_from_type_id → Annual Leave, so checking/deducting balance must
+  // follow that link. Returns the original id if no link is set.
+  const resolveBalanceTypeId = async (leaveTypeId) => {
+    if (!leaveTypeId) return leaveTypeId;
+    try {
+      const t = await db.get('SELECT deducts_from_type_id FROM leave_types WHERE id = ?', [leaveTypeId]);
+      return (t && t.deducts_from_type_id) ? t.deducts_from_type_id : leaveTypeId;
+    } catch (_) {
+      return leaveTypeId; // column may not exist on a very old DB — fail safe
+    }
+  };
+
+  ipcMain.handle('leave:request', async (event, { leaveTypeId, startDate, endDate, reason, userId, isHalfDay, halfDaySession, attachment }) => {
     try {
       // The frontend now passes user.id explicitly. The old version used
       // event.sender.id (a WebContents id, e.g. 1) which never matched a
@@ -230,12 +265,14 @@ function register(ipcMain, db) {
         return { success: false, message: 'Selected dates have no working days (Mon-Sat)' };
       }
 
-      // Check balance
+      // Check balance — Saturday Off deducts from Annual Leave, so resolve the
+      // type whose balance actually applies before looking it up.
       const currentYear = new Date().getFullYear();
+      const balanceTypeId = await resolveBalanceTypeId(leaveTypeId);
       const balance = await db.get(
         `SELECT * FROM leave_balances
          WHERE user_id = ? AND leave_type_id = ? AND year = ?`,
-        [userId, leaveTypeId, currentYear]
+        [userId, balanceTypeId, currentYear]
       );
 
       if (!balance) {
@@ -272,11 +309,37 @@ function register(ipcMain, db) {
         effectiveReason = `[UNPAID — balance was ${balance.remaining}, needed ${daysCount}] ${effectiveReason}`.trim();
       }
 
+      // Pulse v2 — persist an optional supporting document to disk before the
+      // row is written, so we never store a path to a file that failed to save.
+      let att = null;
+      if (attachment && attachment.base64 && attachment.name) {
+        try {
+          const buf = Buffer.from(attachment.base64, 'base64');
+          if (buf.length > MAX_LEAVE_ATTACHMENT_BYTES) {
+            return { success: false, message: 'Attachment too large (max 10 MB)' };
+          }
+          const fileId = uuidv4();
+          const fullPath = path.join(leaveAttachmentsDir(), `${fileId}${safeExt(attachment.name)}`);
+          fs.writeFileSync(fullPath, buf);
+          att = {
+            path: fullPath,
+            name: String(attachment.name).slice(0, 255),
+            size: buf.length,
+            mime: String(attachment.mime || 'application/octet-stream').slice(0, 255)
+          };
+        } catch (e) {
+          console.error('[LEAVE] attachment write failed:', e);
+          return { success: false, message: 'Could not save attachment: ' + e.message };
+        }
+      }
+
       const requestId = uuidv4();
       await db.run(
-        `INSERT INTO leave_requests (id, user_id, leave_type_id, start_date, end_date, days_count, reason, status)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-        [requestId, userId, leaveTypeId, startDate, endDate, daysCount, effectiveReason, 'pending']
+        `INSERT INTO leave_requests (id, user_id, leave_type_id, start_date, end_date, days_count, reason, status,
+                                     attachment_path, attachment_name, attachment_size, attachment_mime)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [requestId, userId, leaveTypeId, startDate, endDate, daysCount, effectiveReason, 'pending',
+         att?.path || null, att?.name || null, att?.size || null, att?.mime || null]
       );
 
       // Route the approval. Normal employees go to their department lead.
@@ -388,7 +451,8 @@ function register(ipcMain, db) {
           `SELECT id, annual_entitlement, carry_forward_enabled,
                   max_carry_forward_days, expiry_months_after_year_end,
                   encashment_enabled
-           FROM leave_types`
+           FROM leave_types
+           WHERE deducts_from_type_id IS NULL`
         );
         // Look up joining date AND probation status so probationers get a
         // zero allocation (their leave is unpaid until probation completes).
@@ -425,7 +489,8 @@ function register(ipcMain, db) {
         `SELECT lb.*, lt.name as leave_type_name, lt.annual_entitlement
          FROM leave_balances lb
          JOIN leave_types lt ON lb.leave_type_id = lt.id
-         WHERE lb.user_id = ? AND lb.year = ?`,
+         WHERE lb.user_id = ? AND lb.year = ?
+           AND lt.deducts_from_type_id IS NULL`,
         [userId, currentYear]
       );
 
@@ -625,11 +690,14 @@ function register(ipcMain, db) {
       const skipBalanceDeduction = isUnpaid || onProbationNow;
 
       if (!skipBalanceDeduction) {
+        // Saturday Off deducts from Annual Leave — resolve the effective
+        // balance type so the right allowance is reduced.
+        const deductTypeId = await resolveBalanceTypeId(request.leave_type_id);
         await db.run(
           `UPDATE leave_balances
            SET used = used + ?, remaining = remaining - ?
            WHERE user_id = ? AND leave_type_id = ? AND year = ?`,
-          [request.days_count, request.days_count, request.user_id, request.leave_type_id, currentYear]
+          [request.days_count, request.days_count, request.user_id, deductTypeId, currentYear]
         );
       } else {
         console.log(`[LEAVE] Skipping balance deduction for unpaid/probation leave: ${requestId}`);
@@ -1091,6 +1159,31 @@ function register(ipcMain, db) {
     } catch (error) {
       console.error('Get assigned leave requests error:', error);
       return { success: false, message: 'Failed to retrieve assigned requests' };
+    }
+  });
+
+  // Pulse v2 — read a leave supporting-document back as base64 for download /
+  // preview. Mirrors chat:readAttachment's safety check: the requested path
+  // must resolve to a file INSIDE the leave-attachments directory, so a
+  // crafted path can't read arbitrary files off disk.
+  ipcMain.handle('leave:readAttachment', async (_event, attachmentPath) => {
+    try {
+      if (!attachmentPath || typeof attachmentPath !== 'string') {
+        return { success: false, message: 'No attachment path' };
+      }
+      const dir = leaveAttachmentsDir();
+      const resolved = path.resolve(attachmentPath);
+      if (!resolved.startsWith(path.resolve(dir))) {
+        return { success: false, message: 'Invalid attachment path' };
+      }
+      if (!fs.existsSync(resolved)) {
+        return { success: false, message: 'Attachment file not found' };
+      }
+      const buf = fs.readFileSync(resolved);
+      return { success: true, data: { base64: buf.toString('base64') } };
+    } catch (error) {
+      console.error('[LEAVE] readAttachment error:', error);
+      return { success: false, message: error.message };
     }
   });
 

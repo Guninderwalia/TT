@@ -191,8 +191,10 @@
       invoke('leave:request', {
         leaveTypeId, startDate, endDate, reason, userId,
         isHalfDay: opts.isHalfDay === true,
-        halfDaySession: opts.halfDaySession || null
+        halfDaySession: opts.halfDaySession || null,
+        attachment: opts.attachment || null
       }),
+    readLeaveAttachment: (attachmentPath) => invoke('leave:readAttachment', attachmentPath),
     getLeaveBalance: (userId) => invoke('leave:getBalance', { userId }),
     getLeaveRequests: (userId) => invoke('leave:getRequests', { userId }),
     // Rollover-policy admin surface

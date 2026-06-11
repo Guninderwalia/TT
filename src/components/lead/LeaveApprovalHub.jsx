@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import ReasonPrompt from '../common/ReasonPrompt';
+import { downloadLeaveAttachment } from '../../utils/leaveAttachment';
 
 function LeaveApprovalHub({ user }) {
   const [requests, setRequests] = useState([]);
@@ -214,6 +215,7 @@ function LeaveApprovalHub({ user }) {
               <th>To Date</th>
               <th>Days</th>
               <th>Reason</th>
+              <th>Document</th>
               <th>Status</th>
               <th>Actions</th>
             </tr>
@@ -221,7 +223,7 @@ function LeaveApprovalHub({ user }) {
           <tbody>
             {pending.length === 0 ? (
               <tr>
-                <td colSpan="9" style={{ textAlign: 'center', padding: '30px' }}>
+                <td colSpan="10" style={{ textAlign: 'center', padding: '30px' }}>
                   No pending leave requests.
                 </td>
               </tr>
@@ -242,6 +244,19 @@ function LeaveApprovalHub({ user }) {
                   <td>{req.days_count}</td>
                   <td style={{ maxWidth: '260px', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
                     {req.reason || <span style={{ opacity: 0.5 }}>—</span>}
+                  </td>
+                  <td>
+                    {req.attachment_path ? (
+                      <button
+                        className="btn btn-secondary btn-sm"
+                        onClick={() => downloadLeaveAttachment(req)}
+                        title={req.attachment_name || 'Download supporting document'}
+                      >
+                        📎 View
+                      </button>
+                    ) : (
+                      <span style={{ opacity: 0.5 }}>—</span>
+                    )}
                   </td>
                   <td><span className="badge badge-warning">Pending</span></td>
                   <td>
