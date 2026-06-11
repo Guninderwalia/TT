@@ -169,6 +169,9 @@ async function registerAll(db) {
   // webServer's SSE route reads this global to wire chat realtime.
   global.__chatHandlers = chatHandlers;
 
+  // Pulse v2 — Ask Pulse AI assistant (Google Gemini).
+  require('./handlers/aiHandlers').register(ipcMain, db);
+
   // The require paths above are relative to this file — but the actual files
   // live under src/main/handlers. The line `require('./handlers/...')` would
   // resolve to src/server/handlers, which doesn't exist. We rewrite once

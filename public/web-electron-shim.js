@@ -176,6 +176,12 @@
     reverseSignOut: (userId, date) =>
       invoke('attendance:reverseSignOut', { userId, date, currentUserId: cachedUserId() }),
 
+    // Ask Pulse AI assistant
+    pulseStatus: () => invoke('ai:pulseStatus'),
+    getPulseThread: (userId) => invoke('ai:getPulseThread', { userId: userId || cachedUserId() }),
+    askPulse: (userId, message) => invoke('ai:askPulse', { userId: userId || cachedUserId(), message }),
+    resetPulseThread: (userId) => invoke('ai:resetPulseThread', { userId: userId || cachedUserId() }),
+
     // Payroll
     getPayrollData: (userId, month, year) =>
       invoke('payroll:getData', { userId, month, year }),

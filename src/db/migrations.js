@@ -76,6 +76,10 @@ async function runMigrations(db) {
     // paid pro-rata instead of as a full day.
     await addWorkedFractionToAttendance(db);
 
+    // Pulse v2 — Ask Pulse AI assistant conversation storage (one rolling
+    // thread per user).
+    await createPulseConversationsTableIfNeeded(db);
+
     // v4.6 — User session tracking (login fingerprint, IP, UA) so a user
     // can see other devices logged into their account and revoke them.
     await createUserSessionsTableIfNeeded(db);
@@ -670,6 +674,29 @@ async function addWorkedFractionToAttendance(db) {
     }
   } catch (error) {
     console.error('[MIGRATIONS] Error adding attendance.worked_fraction:', error.message);
+  }
+}
+
+// Pulse v2 — Ask Pulse conversation threads. One row per user holds their
+// rolling chat history with the assistant as a JSON array of
+// { role: 'user'|'model', text, at } messages.
+async function createPulseConversationsTableIfNeeded(db) {
+  try {
+    const exists = await db.get(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name='pulse_conversations'"
+    );
+    if (!exists) {
+      await db.run(`
+        CREATE TABLE pulse_conversations (
+          user_id TEXT PRIMARY KEY,
+          messages_json TEXT NOT NULL DEFAULT '[]',
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      console.log('[MIGRATIONS] ✓ Created pulse_conversations');
+    }
+  } catch (error) {
+    console.error('[MIGRATIONS] Error creating pulse_conversations:', error.message);
   }
 }
 

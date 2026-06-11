@@ -44,6 +44,12 @@ function exposeElectronAPI() {
   reverseSignOut: (userId, date, currentUserId) =>
     ipcRenderer.invoke('attendance:reverseSignOut', { userId, date, currentUserId }),
 
+  // Ask Pulse AI assistant
+  pulseStatus: () => ipcRenderer.invoke('ai:pulseStatus'),
+  getPulseThread: (userId) => ipcRenderer.invoke('ai:getPulseThread', { userId }),
+  askPulse: (userId, message) => ipcRenderer.invoke('ai:askPulse', { userId, message }),
+  resetPulseThread: (userId) => ipcRenderer.invoke('ai:resetPulseThread', { userId }),
+
   // Payroll
   getPayrollData: (userId, month, year) =>
     ipcRenderer.invoke('payroll:getData', { userId, month, year }),
