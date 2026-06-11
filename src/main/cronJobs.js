@@ -240,6 +240,21 @@ async function runAllNow(db) {
   await runAutoSignOut(db);
 }
 
+// v5.2 — once-a-day database backup. The scheduler ticks hourly, so we track
+// the last backup date and only run when the (office) day rolls over.
+let _lastBackupDate = null;
+async function maybeRunDailyBackup(db) {
+  const today = require('../utils/officeTime').getOfficeDate();
+  if (_lastBackupDate === today) return;
+  _lastBackupDate = today; // claim first so overlapping ticks don't double-run
+  try {
+    await require('./dbBackup').runDailyBackup(db);
+  } catch (e) {
+    console.error('[CRON] daily backup failed:', e.message);
+    _lastBackupDate = null; // allow a retry on the next tick
+  }
+}
+
 // Start an interval-based scheduler. Runs every hour (3,600,000 ms). Also
 // fires once immediately on startup so a fresh deploy picks up any
 // missed work since the last container went down.
@@ -247,8 +262,11 @@ function start(db) {
   if (!db) return null;
   console.log('[CRON] Starting scheduler — runs hourly');
   runAllNow(db).catch(e => console.error('[CRON] initial run failed:', e));
+  // Take a backup on startup too, so a fresh deploy immediately has one.
+  maybeRunDailyBackup(db);
   return setInterval(() => {
     runAllNow(db).catch(e => console.error('[CRON] tick failed:', e));
+    maybeRunDailyBackup(db);
   }, 60 * 60 * 1000);
 }
 
