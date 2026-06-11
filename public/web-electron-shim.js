@@ -22,7 +22,7 @@
 
   // Bump this whenever the shim's API surface changes so the version printed
   // in DevTools tells us at a glance whether a stale copy is cached.
-  const SHIM_VERSION = '2.1.0';
+  const SHIM_VERSION = '2.2.0';
   console.log('[WEB-SHIM v' + SHIM_VERSION + '] Browser detected, installing web shim for window.electron');
 
   // Reads the currently cached user (set on auth:login). Used as a fallback so
@@ -35,6 +35,20 @@
       if (raw) return (JSON.parse(raw) || {}).id || null;
     } catch (_) { /* ignore */ }
     return null;
+  }
+
+  // v5.2 — the session token issued at login. Sent on every request so the
+  // server can verify identity instead of trusting the (spoofable) user-id
+  // header. Stored inside the cached user object on auth:login.
+  function cachedSessionToken() {
+    try {
+      const raw = localStorage.getItem('tasktango_user');
+      if (raw) {
+        const u = JSON.parse(raw) || {};
+        return u.sessionToken || u.session_token || '';
+      }
+    } catch (_) { /* ignore */ }
+    return '';
   }
 
   // API endpoint (the Electron app's HTTP server).
@@ -61,12 +75,14 @@
   async function invoke(channel, args) {
     try {
       const userId = localStorage.getItem('tasktango_user_id') || '';
+      const sessionToken = cachedSessionToken();
 
       const response = await fetch(API_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-user-id': userId
+          'x-user-id': userId,
+          ...(sessionToken ? { 'x-session-token': sessionToken } : {})
         },
         body: JSON.stringify({ channel, args: args || {} }),
         credentials: 'include'

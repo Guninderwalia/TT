@@ -1,9 +1,11 @@
 const { v4: uuidv4 } = require('uuid');
 const { writeAudit } = require('./_auditHelper');
+const { canAccessUser, denied } = require('./_authz');
 
 function register(ipcMain, db) {
   ipcMain.handle('payroll:getData', async (event, { userId, month, year }) => {
     try {
+      if (!(await canAccessUser(db, event, userId))) return denied();
       let payroll = await db.get(
         `SELECT * FROM payroll
          WHERE user_id = ? AND payroll_month = ? AND payroll_year = ?`,
@@ -148,6 +150,7 @@ function register(ipcMain, db) {
 
   ipcMain.handle('payroll:getHistory', async (event, { userId }) => {
     try {
+      if (!(await canAccessUser(db, event, userId))) return denied();
       const history = await db.all(
         `SELECT * FROM payroll
          WHERE user_id = ?

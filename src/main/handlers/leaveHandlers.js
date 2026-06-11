@@ -1,6 +1,7 @@
 const { v4: uuidv4 } = require('uuid');
 const { differenceInCalendarDays } = require('date-fns');
 const { writeAudit } = require('./_auditHelper');
+const { canAccessUser, denied } = require('./_authz');
 const path = require('path');
 const fs = require('fs');
 let _electronApp = null;
@@ -434,6 +435,7 @@ function register(ipcMain, db) {
 
   ipcMain.handle('leave:getBalance', async (event, { userId }) => {
     try {
+      if (!(await canAccessUser(db, event, userId))) return denied();
       const currentYear = new Date().getFullYear();
 
       // 0. Lazy backfill: if this user has NO balance rows for the current
@@ -557,6 +559,7 @@ function register(ipcMain, db) {
 
   ipcMain.handle('leave:getRequests', async (event, { userId }) => {
     try {
+      if (!(await canAccessUser(db, event, userId))) return denied();
       const requests = await db.all(
         `SELECT lr.*, lt.name as leave_type_name
          FROM leave_requests lr
@@ -1201,6 +1204,7 @@ function register(ipcMain, db) {
   // Get employee leave allocation
   ipcMain.handle('leave:getEmployeeAllocation', async (event, { userId }) => {
     try {
+      if (!(await canAccessUser(db, event, userId))) return denied();
       const user = await db.get('SELECT * FROM users WHERE id = ?', [userId]);
       if (!user) {
         return { success: false, message: 'User not found' };
@@ -1327,6 +1331,7 @@ function register(ipcMain, db) {
   ipcMain.handle('leave:getRolloverHistory', async (event, { userId } = {}) => {
     try {
       if (!userId) return { success: false, message: 'userId is required' };
+      if (!(await canAccessUser(db, event, userId))) return denied();
       const rows = await db.all(
         `SELECT log.id, log.leave_type_id, lt.name as leave_type_name,
                 log.from_year, log.to_year, log.prev_remaining,
