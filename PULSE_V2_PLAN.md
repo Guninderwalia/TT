@@ -115,8 +115,22 @@
 ## Rough totals
 ~35–45 hours across 13 items. Suggested order: quick wins first (1, 8, 12, remove-event-delete), then leave (7, 9), payroll (5, 6), breaks (4, 10), export (3), and Ask Pulse last (largest + needs API key).
 
-## Open decisions before build
-1. **Ask Pulse:** free vs paid Gemini, placement, and API key.
-2. **Item 6:** auto pro-rate / manual / hybrid.
-3. **Item 10:** 30-min break = warn vs auto-end.
-4. **Item 9:** "Saturday Off" exact name + does it deduct annual balance.
+## Decisions (locked 2026-06-11)
+1. **Ask Pulse:** build **last**, **free Gemini** tier. API key supplied later (Fly secret `GEMINI_API_KEY`).
+2. **Item 6:** **Hybrid** — auto-suggest pro-rated value, admin can override per day.
+3. **Item 10:** 30-min break = **warn, do not force-end**. Confirmation before start; multiple breaks allowed.
+4. **Item 9:** "Saturday Off" **deducts** from annual leave balance (treated as paid leave).
+
+## Build order (each committed separately on pulse-v2)
+1. Time logging single-digit fix (item 1)
+2. Department filter in Attendance Mgmt (item 8)
+3. Department calendar visible to all (item 12)
+4. Remove employee event-delete (unnumbered)
+5. Leave attachment (item 7)
+6. Saturday Off leave type + Type filter (item 9)
+7. Mark Paid button (item 5)
+8. Partial-day pay hybrid (item 6)
+9. Break status/date fix + break in graphs (item 4)
+10. Break safeguards: confirm + 30-min warn + multiple breaks (item 10)
+11. Export PDF for charts (item 3)
+12. Ask Pulse AI (Gemini) — last
