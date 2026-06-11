@@ -15,6 +15,7 @@ import TimeLogging from '../components/employee/TimeLogging';
 import EmployeePerformanceReview from '../components/employee/EmployeePerformanceReview';
 import EmployeeDocuments from '../components/common/EmployeeDocuments';
 import ChatWidget from '../components/common/ChatWidget';
+import AskPulse from '../components/common/AskPulse';
 import logoImage from '../assets/logo.png';
 import NotificationBell from '../components/common/NotificationBell';
 import QuickSignInChip from '../components/common/QuickSignInChip';
@@ -161,6 +162,7 @@ function LeadDashboard({ user, onLogout }) {
           </Routes>
         </div>
       </div>
+      <AskPulse user={user} />
     </div>
   );
 }

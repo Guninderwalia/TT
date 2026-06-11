@@ -23,9 +23,31 @@ function LeaveCalendar({ user }) {
   const [employeeInfo, setEmployeeInfo] = useState(null);
   const [leaveAllocation, setLeaveAllocation] = useState(null);
   const [leaveTypes, setLeaveTypes] = useState([]);
+  // Pulse v2 — optional supporting document (medical note etc.) attached to a
+  // leave request. Held as { name, mime, size, base64 } until submit.
+  const [pendingDoc, setPendingDoc] = useState(null);
   // When set, holds { requestId } for the leave the employee chose to
   // cancel — drives the reason-prompt modal.
   const [cancelFor, setCancelFor] = useState(null);
+
+  // Read a chosen file into base64 so it can ride along in the request.
+  const handleDocPick = (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) { setPendingDoc(null); return; }
+    if (file.size > 10 * 1024 * 1024) {
+      window.toast?.warning?.('Attachment too large (max 10 MB).');
+      e.target.value = '';
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = String(reader.result || '');
+      const base64 = result.includes(',') ? result.split(',')[1] : result;
+      setPendingDoc({ name: file.name, mime: file.type || 'application/octet-stream', size: file.size, base64 });
+    };
+    reader.onerror = () => window.toast?.error?.('Could not read the file.');
+    reader.readAsDataURL(file);
+  };
 
   useEffect(() => {
     loadData();
@@ -35,15 +57,27 @@ function LeaveCalendar({ user }) {
 
   const loadLeaveTypes = async () => {
     try {
-      // Load leave types from balance data to get IDs
+      // Base list comes from the user's balances (Annual Leave, etc.).
       const result = await window.electron.getLeaveBalance(user.id);
-      if (result.success && Array.isArray(result.data)) {
-        setLeaveTypes(result.data);
-        // Set default to first available leave type
-        if (result.data.length > 0) {
-          setLeaveType(result.data[0].leave_type_id);
+      const base = (result.success && Array.isArray(result.data)) ? result.data.slice() : [];
+
+      // Pulse v2 — also surface "selectable-only" types that have no balance
+      // card of their own (e.g. Saturday Off, which deducts from Annual Leave).
+      // Append any type not already represented so it shows in the dropdown.
+      try {
+        const all = await window.electron.listLeaveTypesWithPolicy();
+        if (all?.success && Array.isArray(all.data)) {
+          const present = new Set(base.map(b => b.leave_type_id));
+          for (const t of all.data) {
+            if (!present.has(t.id)) {
+              base.push({ leave_type_id: t.id, leave_type_name: t.name });
+            }
+          }
         }
-      }
+      } catch (_) { /* dropdown still works off balances if this fails */ }
+
+      setLeaveTypes(base);
+      if (base.length > 0) setLeaveType(base[0].leave_type_id);
     } catch (error) {
       console.error('Failed to load leave types:', error);
     }
@@ -182,7 +216,7 @@ function LeaveCalendar({ user }) {
     try {
       const result = await window.electron.requestLeave(
         leaveType, selectedStartDate, effectiveEnd, reason, myId,
-        { isHalfDay, halfDaySession }
+        { isHalfDay, halfDaySession, attachment: pendingDoc }
       );
       if (result.success) {
         window.toast.success('Leave request submitted successfully!');
@@ -191,6 +225,7 @@ function LeaveCalendar({ user }) {
         setReason('');
         setIsHalfDay(false);
         setHalfDaySession('morning');
+        setPendingDoc(null);
         setShowRequestForm(false);
         await loadData();
       } else {
@@ -608,6 +643,27 @@ function LeaveCalendar({ user }) {
                   rows="4"
                   disabled={submitting}
                 />
+              </div>
+              {/* Pulse v2 — optional supporting document (e.g. medical note). */}
+              <div className="form-group" title="Attach a supporting document such as a medical certificate (optional, max 10 MB).">
+                <label>Supporting Document <span style={{ opacity: 0.6, fontWeight: 400 }}>(optional)</span></label>
+                <input
+                  type="file"
+                  onChange={handleDocPick}
+                  disabled={submitting}
+                  accept=".pdf,.jpg,.jpeg,.png,.webp,.gif,.doc,.docx,.txt"
+                />
+                {pendingDoc && (
+                  <div style={{ marginTop: 6, fontSize: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span>📎 {pendingDoc.name} ({Math.round(pendingDoc.size / 1024)} KB)</span>
+                    <button
+                      type="button"
+                      onClick={() => setPendingDoc(null)}
+                      style={{ background: 'transparent', border: 0, color: 'inherit', cursor: 'pointer' }}
+                      title="Remove attachment"
+                    >✕</button>
+                  </div>
+                )}
               </div>
               <div className="form-actions">
                 <button

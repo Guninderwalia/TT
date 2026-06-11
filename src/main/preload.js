@@ -44,6 +44,12 @@ function exposeElectronAPI() {
   reverseSignOut: (userId, date, currentUserId) =>
     ipcRenderer.invoke('attendance:reverseSignOut', { userId, date, currentUserId }),
 
+  // Ask Pulse AI assistant
+  pulseStatus: () => ipcRenderer.invoke('ai:pulseStatus'),
+  getPulseThread: (userId) => ipcRenderer.invoke('ai:getPulseThread', { userId }),
+  askPulse: (userId, message) => ipcRenderer.invoke('ai:askPulse', { userId, message }),
+  resetPulseThread: (userId) => ipcRenderer.invoke('ai:resetPulseThread', { userId }),
+
   // Payroll
   getPayrollData: (userId, month, year) =>
     ipcRenderer.invoke('payroll:getData', { userId, month, year }),
@@ -52,14 +58,19 @@ function exposeElectronAPI() {
   addExpense: (payrollId, category, amount, description) =>
     ipcRenderer.invoke('payroll:addExpense', { payrollId, category, amount, description }),
   getPayrollHistory: (userId) => ipcRenderer.invoke('payroll:getHistory', { userId }),
+  getPayrollPaidStatus: (userId, month, year) =>
+    ipcRenderer.invoke('payroll:getPaidStatus', { userId, month, year }),
+  setPayrollPaidStatus: (args) => ipcRenderer.invoke('payroll:setPaidStatus', args),
 
   // Leave
   requestLeave: (leaveTypeId, startDate, endDate, reason, userId, opts = {}) =>
     ipcRenderer.invoke('leave:request', {
       leaveTypeId, startDate, endDate, reason, userId,
       isHalfDay: opts.isHalfDay === true,
-      halfDaySession: opts.halfDaySession || null
+      halfDaySession: opts.halfDaySession || null,
+      attachment: opts.attachment || null
     }),
+  readLeaveAttachment: (attachmentPath) => ipcRenderer.invoke('leave:readAttachment', attachmentPath),
   getLeaveBalance: (userId) => ipcRenderer.invoke('leave:getBalance', { userId }),
   getLeaveRequests: (userId) => ipcRenderer.invoke('leave:getRequests', { userId }),
   // Rollover-policy admin surface
@@ -234,8 +245,8 @@ function exposeElectronAPI() {
     ipcRenderer.invoke('event:create', { userId, date, time, activityType, notes }),
   updateEvent: (eventId, time, activityType, notes) =>
     ipcRenderer.invoke('event:update', { eventId, time, activityType, notes }),
-  deleteEvent: (eventId) =>
-    ipcRenderer.invoke('event:delete', { eventId }),
+  deleteEvent: (eventId, currentUserId) =>
+    ipcRenderer.invoke('event:delete', { eventId, currentUserId }),
   getEventsByRange: (userId, startDate, endDate) =>
     ipcRenderer.invoke('event:getByRange', { userId, startDate, endDate }),
 

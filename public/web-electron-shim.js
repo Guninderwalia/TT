@@ -176,6 +176,12 @@
     reverseSignOut: (userId, date) =>
       invoke('attendance:reverseSignOut', { userId, date, currentUserId: cachedUserId() }),
 
+    // Ask Pulse AI assistant
+    pulseStatus: () => invoke('ai:pulseStatus'),
+    getPulseThread: (userId) => invoke('ai:getPulseThread', { userId: userId || cachedUserId() }),
+    askPulse: (userId, message) => invoke('ai:askPulse', { userId: userId || cachedUserId(), message }),
+    resetPulseThread: (userId) => invoke('ai:resetPulseThread', { userId: userId || cachedUserId() }),
+
     // Payroll
     getPayrollData: (userId, month, year) =>
       invoke('payroll:getData', { userId, month, year }),
@@ -184,6 +190,10 @@
     addExpense: (payrollId, category, amount, description) =>
       invoke('payroll:addExpense', { payrollId, category, amount, description }),
     getPayrollHistory: (userId) => invoke('payroll:getHistory', { userId }),
+    getPayrollPaidStatus: (userId, month, year) =>
+      invoke('payroll:getPaidStatus', { userId, month, year }),
+    setPayrollPaidStatus: (args) =>
+      invoke('payroll:setPaidStatus', { ...(args || {}), currentUserId: (args && args.currentUserId) || cachedUserId() }),
 
     // Leave — note the half-day opts that preload added; the shim now forwards
     // them so half-day leave requests submitted from the web behave the same.
@@ -191,8 +201,10 @@
       invoke('leave:request', {
         leaveTypeId, startDate, endDate, reason, userId,
         isHalfDay: opts.isHalfDay === true,
-        halfDaySession: opts.halfDaySession || null
+        halfDaySession: opts.halfDaySession || null,
+        attachment: opts.attachment || null
       }),
+    readLeaveAttachment: (attachmentPath) => invoke('leave:readAttachment', attachmentPath),
     getLeaveBalance: (userId) => invoke('leave:getBalance', { userId }),
     getLeaveRequests: (userId) => invoke('leave:getRequests', { userId }),
     // Rollover-policy admin surface
@@ -384,8 +396,8 @@
       invoke('event:create', { userId, date, time, activityType, notes }),
     updateEvent: (eventId, time, activityType, notes) =>
       invoke('event:update', { eventId, time, activityType, notes }),
-    deleteEvent: (eventId) =>
-      invoke('event:delete', { eventId }),
+    deleteEvent: (eventId, currentUserId) =>
+      invoke('event:delete', { eventId, currentUserId: currentUserId || cachedUserId() }),
     getEventsByRange: (userId, startDate, endDate) =>
       invoke('event:getByRange', { userId, startDate, endDate }),
 

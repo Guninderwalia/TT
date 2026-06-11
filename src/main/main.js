@@ -652,6 +652,10 @@ async function registerDatabaseHandlers(db) {
     global.__chatHandlers = chatHandlers;
     console.log('[CHAT] ✓ Chat handlers registered');
 
+    // Pulse v2 — Ask Pulse AI assistant (Google Gemini).
+    require('./handlers/aiHandlers').register(ipcMain, db);
+    console.log('[AI] ✓ Ask Pulse handlers registered');
+
     // Register other database handlers as needed
   } catch (error) {
     console.error('[HANDLERS] Error registering database handlers:', error);

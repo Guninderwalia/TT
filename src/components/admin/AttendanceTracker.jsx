@@ -40,6 +40,10 @@ function AttendanceTracker({ user }) {
   const [viewMode, setViewMode] = useState('calendar'); // 'calendar' or 'table'
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM
   const [selectedEmployee, setSelectedEmployee] = useState('all');
+  // v2 — Department filter. Narrows both the calendar grid and the daily
+  // table to a single department. 'all' shows everyone.
+  const [departments, setDepartments] = useState([]);
+  const [selectedDepartment, setSelectedDepartment] = useState('all');
   const [monthAttendance, setMonthAttendance] = useState({});
   const [editingCell, setEditingCell] = useState(null); // {date, employeeId}
   const [editFormData, setEditFormData] = useState({
@@ -70,12 +74,30 @@ function AttendanceTracker({ user }) {
 
   useEffect(() => {
     loadEmployees();
+    loadDepartments();
     if (viewMode === 'calendar') {
       loadMonthAttendance();
     } else {
       loadAttendanceForDate();
     }
-  }, [selectedDate, selectedMonth, viewMode]);
+  }, [selectedDate, selectedMonth, viewMode, selectedDepartment]);
+
+  // v2 — helper: does this employee belong to the selected department?
+  // Accepts both snake_case (department_id) and camelCase (departmentId).
+  const matchesDepartment = (emp) => {
+    if (selectedDepartment === 'all') return true;
+    const deptId = emp?.department_id ?? emp?.departmentId ?? null;
+    return String(deptId) === String(selectedDepartment);
+  };
+
+  const loadDepartments = async () => {
+    try {
+      const result = await window.electron.getDepartments();
+      if (result?.success) setDepartments(result.data || []);
+    } catch (error) {
+      console.error('Failed to load departments:', error);
+    }
+  };
 
   // Load holidays whenever month changes or component comes into focus
   useEffect(() => {
@@ -171,7 +193,11 @@ function AttendanceTracker({ user }) {
   const loadAttendanceForDate = async () => {
     setLoading(true);
     try {
-      const result = await window.electron.getAttendanceByDate(selectedDate);
+      // v2 — pass the department filter straight to the backend (getByDate
+      // already scopes by department) so the daily table only loads the
+      // selected department's rows.
+      const deptArg = selectedDepartment === 'all' ? undefined : selectedDepartment;
+      const result = await window.electron.getAttendanceByDate(selectedDate, deptArg);
       if (result.success) {
         setAttendance((result.data || []).map(normalizeAttendanceRow));
       }
@@ -277,7 +303,7 @@ function AttendanceTracker({ user }) {
 
   const getMissingEmployees = () => {
     const attendedIds = attendance.map(a => a.userId);
-    return employees.filter(e => !attendedIds.includes(e.id));
+    return employees.filter(e => !attendedIds.includes(e.id) && matchesDepartment(e));
   };
 
   const getStatusColor = (status) => {
@@ -620,7 +646,9 @@ function AttendanceTracker({ user }) {
       days.push(i);
     }
 
-    const displayEmployees = selectedEmployee === 'all' ? employees : employees.filter(e => e.id === selectedEmployee);
+    const displayEmployees = employees
+      .filter(matchesDepartment)
+      .filter(e => selectedEmployee === 'all' ? true : e.id === selectedEmployee);
 
     return (
       <div style={{overflowX: 'auto'}}>
@@ -800,6 +828,24 @@ function AttendanceTracker({ user }) {
             />
           )}
 
+          {/* v2 — Department filter. Applies to both calendar and table views.
+              Resetting it also clears any per-employee selection that no
+              longer belongs to the chosen department. */}
+          <select
+            value={selectedDepartment}
+            onChange={(e) => {
+              setSelectedDepartment(e.target.value);
+              setSelectedEmployee('all');
+            }}
+            style={{padding: '8px 12px'}}
+            title="Filter by department"
+          >
+            <option value="all">All Departments</option>
+            {departments.map(dept => (
+              <option key={dept.id} value={dept.id}>{dept.name}</option>
+            ))}
+          </select>
+
           {viewMode === 'calendar' && (
             <select
               value={selectedEmployee}
@@ -807,7 +853,7 @@ function AttendanceTracker({ user }) {
               style={{padding: '8px 12px'}}
             >
               <option value="all">All Employees</option>
-              {employees.map(emp => (
+              {employees.filter(matchesDepartment).map(emp => (
                 <option key={emp.id} value={emp.id}>{emp.fullName}</option>
               ))}
             </select>

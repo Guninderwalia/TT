@@ -12,6 +12,7 @@ import AdminPerformanceReview from '../components/admin/AdminPerformanceReview';
 import HolidayManagement from '../components/admin/HolidayManagement';
 import AdminLeaveApprovals from '../components/admin/AdminLeaveApprovals';
 import ChatWidget from '../components/common/ChatWidget';
+import AskPulse from '../components/common/AskPulse';
 import logoImage from '../assets/logo.png';
 import NotificationBell from '../components/common/NotificationBell';
 import QuickSignInChip from '../components/common/QuickSignInChip';
@@ -148,6 +149,7 @@ function AdminDashboard({ user, onLogout }) {
           </Routes>
         </div>
       </div>
+      <AskPulse user={user} />
     </div>
   );
 }

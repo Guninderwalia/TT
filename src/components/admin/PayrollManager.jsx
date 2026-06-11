@@ -11,6 +11,36 @@ function PayrollManager() {
   const [year, setYear] = useState(new Date().getFullYear());
   const [payrollData, setPayrollData] = useState(null);
   const [loading, setLoading] = useState(false);
+  // Pulse v2 — paid status (item 5) for the currently-shown employee/month.
+  const [paidStatus, setPaidStatus] = useState({ isPaid: false, paidAt: null });
+  const [savingPaid, setSavingPaid] = useState(false);
+
+  const handleTogglePaid = async () => {
+    if (!payrollData || !selectedEmployee) return;
+    setSavingPaid(true);
+    try {
+      const sc = payrollData.salaryComponents;
+      const res = await window.electron.setPayrollPaidStatus({
+        userId: selectedEmployee,
+        month,
+        year,
+        isPaid: !paidStatus.isPaid,
+        baseSalary: parseFloat(sc.baseSalary) || 0,
+        grossAmount: parseFloat(sc.grossSalary) || 0,
+        netAmount: parseFloat(sc.netSalary) || 0
+      });
+      if (res?.success) {
+        setPaidStatus({ isPaid: res.data.isPaid, paidAt: res.data.paidAt });
+        window.toast?.success?.(res.message || 'Updated');
+      } else {
+        window.toast?.error?.(res?.message || 'Could not update paid status');
+      }
+    } catch (e) {
+      window.toast?.error?.('Error: ' + e.message);
+    } finally {
+      setSavingPaid(false);
+    }
+  };
 
   // Load departments on mount
   useEffect(() => {
@@ -175,6 +205,14 @@ function PayrollManager() {
         },
         attendanceRecords
       });
+
+      // Pulse v2 — load whether this month is already marked paid.
+      try {
+        const ps = await window.electron.getPayrollPaidStatus(selectedEmployee, month, year);
+        setPaidStatus(ps?.success ? { isPaid: ps.data.isPaid, paidAt: ps.data.paidAt } : { isPaid: false, paidAt: null });
+      } catch (_) {
+        setPaidStatus({ isPaid: false, paidAt: null });
+      }
     } catch (error) {
       console.error('Failed to calculate payroll:', error);
       window.toast.error('Error calculating payroll: ' + error.message);
@@ -671,10 +709,32 @@ function PayrollManager() {
           {/* Summary Cards */}
           <div className="form-section">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <h3 style={{ margin: 0 }}>
+              <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
                 Payroll for {payrollData.employee.full_name || payrollData.employee.fullName} - {new Date(2000, payrollData.month - 1).toLocaleString('en-IN', { month: 'long' })} {payrollData.year}
+                {paidStatus.isPaid && (
+                  <span
+                    className="badge badge-success"
+                    title={paidStatus.paidAt ? `Marked paid on ${new Date(paidStatus.paidAt).toLocaleString('en-IN')}` : 'Paid'}
+                    style={{ fontSize: '12px' }}
+                  >
+                    ✓ Paid
+                  </span>
+                )}
               </h3>
               <div style={{ display: 'flex', gap: '8px', marginLeft: '12px' }}>
+                {/* Pulse v2 (item 5) — Mark this month paid / unpaid. */}
+                <button
+                  className="btn"
+                  onClick={handleTogglePaid}
+                  disabled={savingPaid}
+                  style={{
+                    background: paidStatus.isPaid ? '#6b7280' : '#16a34a',
+                    color: 'white', border: 'none'
+                  }}
+                  title={paidStatus.isPaid ? 'Revert to unpaid' : 'Mark this month as paid'}
+                >
+                  {savingPaid ? '…' : paidStatus.isPaid ? '↩ Mark Unpaid' : '💰 Mark as Paid'}
+                </button>
                 <button
                   className="btn btn-primary"
                   onClick={printPayslip}

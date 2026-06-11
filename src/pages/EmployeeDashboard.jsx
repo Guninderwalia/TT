@@ -9,7 +9,9 @@ import EmployeePerformanceReview from '../components/employee/EmployeePerformanc
 import EmployeeDocuments from '../components/common/EmployeeDocuments';
 import ProbationDepositPanel from '../components/common/ProbationDepositPanel';
 import OrgChart from '../components/common/OrgChart';
+import TeamLeavesPanel from '../components/common/TeamLeavesPanel';
 import ChatWidget from '../components/common/ChatWidget';
+import AskPulse from '../components/common/AskPulse';
 import logoImage from '../assets/logo.png';
 import NotificationBell from '../components/common/NotificationBell';
 import QuickSignInChip from '../components/common/QuickSignInChip';
@@ -53,6 +55,7 @@ function EmployeeDashboard({ user, onLogout }) {
     { id: 'timelogging', label: 'Time Logging', icon: 'clock', path: '/timelogging' },
     { id: 'attendance', label: 'Attendance', icon: 'calendar', path: '/attendance' },
     { id: 'leave', label: 'Leave Requests', icon: 'calendar-check', path: '/leave' },
+    { id: 'team-leaves', label: 'Team Leaves', icon: 'calendar', path: '/team-leaves' },
     { id: 'performance', label: 'My Performance', icon: 'trending-up', path: '/performance' },
     { id: 'documents', label: 'My Documents', icon: 'file', path: '/documents' },
     { id: 'org-chart', label: 'Org Chart', icon: 'sitemap', path: '/org-chart' },
@@ -113,6 +116,12 @@ function EmployeeDashboard({ user, onLogout }) {
             <Route path="/timelogging/*" element={<TimeLogging user={user} />} />
             <Route path="/attendance/*" element={<AttendanceLogger user={user} />} />
             <Route path="/leave/*" element={<LeaveCalendar user={user} />} />
+            <Route path="/team-leaves/*" element={
+              <TeamLeavesPanel
+                departmentId={user?.department_id || user?.departmentId || null}
+                title="Team Leaves — My Department"
+              />
+            } />
             <Route path="/performance/*" element={<EmployeePerformanceReview user={user} />} />
             <Route path="/org-chart/*" element={<OrgChart />} />
             <Route path="/documents/*" element={
@@ -129,6 +138,7 @@ function EmployeeDashboard({ user, onLogout }) {
           </Routes>
         </div>
       </div>
+      <AskPulse user={user} />
     </div>
   );
 }

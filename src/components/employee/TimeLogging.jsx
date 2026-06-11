@@ -20,6 +20,15 @@ import { generatePdf } from '../../utils/pdf/pdfGenerator';
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 function TimeLogging({ user, canEdit = false }) {
+  // v2 — Only admins / leads / managers may delete activity-log events.
+  // Plain employees (role "User") can still ADD events but not delete them,
+  // so the audit trail of their day can't be quietly erased. Enforced
+  // server-side too (event:delete checks the caller's role).
+  const _role = (user?.role_name || user?.role || '').toLowerCase();
+  const canDeleteEvents =
+    ['admin', 'administrator', 'md', 'managing director', 'lead', 'manager'].includes(_role) ||
+    user?.is_department_lead === 1 || user?.is_department_lead === true || user?.isLead === true;
+
   const [selectedDate, setSelectedDate] = useState(getOfficeDate());
   const [timeLog, setTimeLog] = useState({
     startTime: '',
@@ -127,6 +136,18 @@ function TimeLogging({ user, canEdit = false }) {
     }
   };
 
+  // v2 — Convert an "H:MM" / "HH:MM" / "HH:MM:SS" string to minutes-since-
+  // midnight. Returns null for blank/partial input. ALL time-ordering checks
+  // below go through this instead of comparing the raw strings: a string
+  // compare treats "7:15" as LATER than "09:00" (because '7' > '0'), which
+  // is exactly why single-digit hours like 7:15 were being rejected.
+  const hmToMinutes = (v) => {
+    if (!v || typeof v !== 'string') return null;
+    const m = v.match(/^(\d{1,2}):(\d{2})/);
+    if (!m) return null;
+    return parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
+  };
+
   const validateTimes = (times) => {
     const errors = {};
 
@@ -146,24 +167,30 @@ function TimeLogging({ user, canEdit = false }) {
       errors.endTime = 'End time is required';
     }
 
-    // Time ordering validation
-    if (times.startTime && times.endTime) {
-      if (times.startTime >= times.endTime) {
+    const startM = hmToMinutes(times.startTime);
+    const endM   = hmToMinutes(times.endTime);
+    const bStartM = hmToMinutes(times.breakStartTime);
+    const bEndM   = hmToMinutes(times.breakEndTime);
+
+    // Time ordering validation — compare by minutes so single-digit hours
+    // (7:15) order correctly against zero-padded ones (09:00).
+    if (startM !== null && endM !== null) {
+      if (startM >= endM) {
         errors.endTime = 'End time must be after start time';
       }
     }
 
-    if (times.breakStartTime && times.breakEndTime) {
-      if (times.breakStartTime >= times.breakEndTime) {
+    if (bStartM !== null && bEndM !== null) {
+      if (bStartM >= bEndM) {
         errors.breakEndTime = 'Break end time must be after break start time';
       }
 
       // Check break is within work hours
-      if (times.startTime && times.endTime) {
-        if (times.breakStartTime < times.startTime) {
+      if (startM !== null && endM !== null) {
+        if (bStartM < startM) {
           errors.breakStartTime = 'Break cannot start before work starts';
         }
-        if (times.breakEndTime > times.endTime) {
+        if (bEndM > endM) {
           errors.breakEndTime = 'Break cannot end after work ends';
         }
       }
@@ -231,6 +258,13 @@ function TimeLogging({ user, canEdit = false }) {
     const currentTime = now.toTimeString().slice(0, 5);
 
     if (!times.startTime) return 'Not Started';
+    // Pulse v2 — a break that's been STARTED but not yet ended means the
+    // person is on break right now. Previously this only returned 'On Break'
+    // when BOTH start and end were set (a completed break), so an in-progress
+    // break wrongly showed "Currently Working".
+    if (times.breakStartTime && !times.breakEndTime) {
+      return 'On Break';
+    }
     if (times.breakStartTime && times.breakEndTime) {
       if (currentTime >= times.breakStartTime && currentTime < times.breakEndTime) {
         return 'On Break';
@@ -264,7 +298,15 @@ function TimeLogging({ user, canEdit = false }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const errors = validateTimes(timeLog);
+    // Normalize every field to zero-padded HH:MM before validating/saving so
+    // a value typed as "7:15" (or pasted) is stored as "07:15".
+    const normalized = {
+      startTime:      normalizeTime(timeLog.startTime),
+      breakStartTime: normalizeTime(timeLog.breakStartTime),
+      breakEndTime:   normalizeTime(timeLog.breakEndTime),
+      endTime:        normalizeTime(timeLog.endTime)
+    };
+    const errors = validateTimes(normalized);
 
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
@@ -276,10 +318,10 @@ function TimeLogging({ user, canEdit = false }) {
       const result = await window.electron.createTimeLog(
         user.id,
         selectedDate,
-        timeLog.startTime,
-        timeLog.breakStartTime,
-        timeLog.breakEndTime,
-        timeLog.endTime
+        normalized.startTime,
+        normalized.breakStartTime,
+        normalized.breakEndTime,
+        normalized.endTime
       );
 
       if (result.success) {
@@ -362,6 +404,15 @@ function TimeLogging({ user, canEdit = false }) {
   // hours of every day when the office (IST) is already on the next date.
   const isToday = selectedDate === getOfficeDate();
 
+  // Pulse v2 — confirm before starting a break so an accidental click on the
+  // "Start Break" button doesn't stamp one.
+  const handleStartBreak = () => {
+    const ok = window.confirm(
+      '☕ Start your break now?\n\nClick OK to start your break, or Cancel to keep working.'
+    );
+    if (ok) stampNow('breakStartTime');
+  };
+
   const handleEdit = (logId) => {
     const log = timeLogs.find(l => l.id === logId);
     if (log) {
@@ -376,7 +427,17 @@ function TimeLogging({ user, canEdit = false }) {
   };
 
   const handleSaveEdit = async (logId) => {
-    const errors = validateTimes(editValues);
+    // Normalize (pad single-digit hours) before validating + saving. The edit
+    // inputs set values raw from the field, so without this a value like
+    // "7:15" reaches the string-ordering checks and gets wrongly rejected.
+    const normalized = {
+      ...editValues,
+      startTime:      normalizeTime(editValues.startTime),
+      breakStartTime: normalizeTime(editValues.breakStartTime),
+      breakEndTime:   normalizeTime(editValues.breakEndTime),
+      endTime:        normalizeTime(editValues.endTime)
+    };
+    const errors = validateTimes(normalized);
 
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
@@ -385,7 +446,7 @@ function TimeLogging({ user, canEdit = false }) {
 
     try {
       setLoading(true);
-      const result = await window.electron.updateTimeLog(logId, editValues);
+      const result = await window.electron.updateTimeLog(logId, normalized);
 
       if (result.success) {
         setSuccessMessage('Time log updated successfully!');
@@ -394,7 +455,7 @@ function TimeLogging({ user, canEdit = false }) {
         setTimeout(() => setSuccessMessage(''), 3000);
         // Keep the events log in sync with the edited break window so the
         // graph and Daily Activity Log don't get out of step.
-        await syncBreakAsEvent(editValues.breakStartTime, editValues.breakEndTime);
+        await syncBreakAsEvent(normalized.breakStartTime, normalized.breakEndTime);
         await loadTimeLogs();
         await loadEvents();
       } else {
@@ -545,9 +606,13 @@ function TimeLogging({ user, canEdit = false }) {
   };
 
   const handleDeleteEvent = async (eventId) => {
+    if (!canDeleteEvents) {
+      window.toast?.error?.('Only an admin or team lead can delete activity-log events.');
+      return;
+    }
     try {
       setLoading(true);
-      const result = await window.electron.deleteEvent(eventId);
+      const result = await window.electron.deleteEvent(eventId, user?.id);
 
       if (result.success) {
         setSuccessMessage('Event deleted successfully!');
@@ -850,7 +915,7 @@ function TimeLogging({ user, canEdit = false }) {
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
               <button
                 type="button"
-                onClick={() => stampNow('breakStartTime')}
+                onClick={handleStartBreak}
                 disabled={!isToday || loading || !timeLog.startTime || !!timeLog.breakStartTime || !!timeLog.endTime}
                 title={timeLog.breakStartTime ? `Break started at ${timeLog.breakStartTime}` : (!timeLog.startTime ? 'Sign in on the Attendance page first' : 'Stamp your break start time')}
                 style={{
@@ -1969,14 +2034,16 @@ function TimeLogging({ user, canEdit = false }) {
                             {activity ? activity.label : typeId}
                           </span>
                         </div>
-                        <button
-                          onClick={() => handleDeleteEvent(event.id)}
-                          className="btn-delete-event"
-                          disabled={loading}
-                          title="Delete event"
-                        >
-                          🗑️
-                        </button>
+                        {canDeleteEvents && (
+                          <button
+                            onClick={() => handleDeleteEvent(event.id)}
+                            className="btn-delete-event"
+                            disabled={loading}
+                            title="Delete event"
+                          >
+                            🗑️
+                          </button>
+                        )}
                       </div>
                       {cleanNotes && (
                         <div className="event-notes">{cleanNotes}</div>

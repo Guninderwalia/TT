@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import ReasonPrompt from '../common/ReasonPrompt';
+import { downloadLeaveAttachment } from '../../utils/leaveAttachment';
 
 function AdminLeaveApprovals({ user }) {
   const [requests, setRequests] = useState([]);
@@ -244,6 +245,7 @@ function AdminLeaveApprovals({ user }) {
               <th>To</th>
               <th>Days</th>
               <th>Reason</th>
+              <th>Document</th>
               <th>Stage</th>
               <th>Actions</th>
             </tr>
@@ -251,7 +253,7 @@ function AdminLeaveApprovals({ user }) {
           <tbody>
             {requests.length === 0 ? (
               <tr>
-                <td colSpan="10" style={{ textAlign: 'center', padding: '30px' }}>
+                <td colSpan="11" style={{ textAlign: 'center', padding: '30px' }}>
                   No pending leave requests assigned to you.
                 </td>
               </tr>
@@ -272,6 +274,20 @@ function AdminLeaveApprovals({ user }) {
                   <td>{req.end_date}</td>
                   <td>{req.days_count}</td>
                   <td>{req.reason || '-'}</td>
+                  <td>
+                    {req.attachment_path ? (
+                      <button
+                        className="btn btn-secondary btn-sm"
+                        onClick={() => downloadLeaveAttachment(req)}
+                        style={{ padding: '4px 10px', fontSize: '12px' }}
+                        title={req.attachment_name || 'Download supporting document'}
+                      >
+                        📎 View
+                      </button>
+                    ) : (
+                      <span style={{ opacity: 0.5 }}>-</span>
+                    )}
+                  </td>
                   <td>{renderStageBadge(req)}</td>
                   <td style={{ display: 'flex', gap: '8px' }}>
                     <button
