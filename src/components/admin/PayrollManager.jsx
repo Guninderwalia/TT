@@ -11,6 +11,62 @@ function PayrollManager() {
   const [year, setYear] = useState(new Date().getFullYear());
   const [payrollData, setPayrollData] = useState(null);
   const [loading, setLoading] = useState(false);
+  // Pulse v2 — paid status (item 5) for the currently-shown employee/month.
+  const [paidStatus, setPaidStatus] = useState({ isPaid: false, paidAt: null });
+  const [savingPaid, setSavingPaid] = useState(false);
+
+  // Pulse v2 (item 6) — recompute pay when the admin overrides the payable
+  // present-day equivalent. Keeps gross/net consistent for the payslip + the
+  // Mark-Paid amount. Absent days are already excluded from gross, so net == gross.
+  const recomputeWithPayable = (payable) => {
+    const val = Math.max(0, Number(payable) || 0);
+    setPayrollData(prev => {
+      if (!prev) return prev;
+      const sc = prev.salaryComponents;
+      const dailyRate = parseFloat(sc.dailyRate) || 0;
+      const payForPresent = val * dailyRate;
+      const payForLeave = parseFloat(sc.payForLeave) || 0;
+      const payForHalfDay = parseFloat(sc.payForHalfDay) || 0;
+      const grossSalary = payForPresent + payForLeave + payForHalfDay;
+      return {
+        ...prev,
+        attendanceBreakdown: { ...prev.attendanceBreakdown, presentEquivalent: val },
+        salaryComponents: {
+          ...sc,
+          payForPresent: payForPresent.toFixed(2),
+          grossSalary: grossSalary.toFixed(2),
+          netSalary: grossSalary.toFixed(2)
+        }
+      };
+    });
+  };
+
+  const handleTogglePaid = async () => {
+    if (!payrollData || !selectedEmployee) return;
+    setSavingPaid(true);
+    try {
+      const sc = payrollData.salaryComponents;
+      const res = await window.electron.setPayrollPaidStatus({
+        userId: selectedEmployee,
+        month,
+        year,
+        isPaid: !paidStatus.isPaid,
+        baseSalary: parseFloat(sc.baseSalary) || 0,
+        grossAmount: parseFloat(sc.grossSalary) || 0,
+        netAmount: parseFloat(sc.netSalary) || 0
+      });
+      if (res?.success) {
+        setPaidStatus({ isPaid: res.data.isPaid, paidAt: res.data.paidAt });
+        window.toast?.success?.(res.message || 'Updated');
+      } else {
+        window.toast?.error?.(res?.message || 'Could not update paid status');
+      }
+    } catch (e) {
+      window.toast?.error?.('Error: ' + e.message);
+    } finally {
+      setSavingPaid(false);
+    }
+  };
 
   // Load departments on mount
   useEffect(() => {
@@ -101,6 +157,39 @@ function PayrollManager() {
       let absentDays = 0;
       let leaveDays = 0;
       let halfDays = 0;
+      // Pulse v2 (item 6) — present-day pay is pro-rated by hours actually
+      // worked, so a 4-hour day no longer pays a full day. presentEquivalent
+      // is the sum of per-day worked fractions; presentDays stays as the head
+      // count for display.
+      let presentEquivalent = 0;
+
+      // Standard full working day in hours (matches the backend hourlyRate
+      // assumption of dailyRate / 9).
+      const STANDARD_DAY_HOURS = 9;
+      const hoursBetween = (inT, outT) => {
+        const toMin = (v) => {
+          if (!v || typeof v !== 'string') return null;
+          const m = v.match(/^(\d{1,2}):(\d{2})/);
+          return m ? parseInt(m[1], 10) * 60 + parseInt(m[2], 10) : null;
+        };
+        const a = toMin(inT), b = toMin(outT);
+        if (a === null || b === null || b <= a) return null;
+        return (b - a) / 60;
+      };
+      // Worked fraction for a PRESENT day: admin override (worked_fraction)
+      // wins; else auto from hours; else full day when we have no time data.
+      const workedFractionFor = (record) => {
+        const wf = record.worked_fraction ?? record.workedFraction;
+        if (wf !== null && wf !== undefined && wf !== '' && !Number.isNaN(Number(wf))) {
+          return Math.max(0, Math.min(1, Number(wf)));
+        }
+        const hrs = hoursBetween(
+          record.signInTime || record.sign_in_time,
+          record.signOutTime || record.sign_out_time
+        );
+        if (hrs === null) return 1; // no time info → treat as a full day (back-compat)
+        return Math.max(0, Math.min(1, hrs / STANDARD_DAY_HOURS));
+      };
 
       // Count each status using UTC to avoid timezone offset issues
       const daysInMonth = new Date(year, month, 0).getDate();
@@ -123,6 +212,7 @@ function PayrollManager() {
           switch (status) {
             case 'present':
               presentDays++;
+              presentEquivalent += workedFractionFor(record);
               break;
             case 'absent':
               absentDays++;
@@ -140,9 +230,12 @@ function PayrollManager() {
         }
       }
 
+      // Round the payable-present figure to 2 dp for display + money math.
+      presentEquivalent = Math.round(presentEquivalent * 100) / 100;
+
       // Calculate payroll
       const dailyRate = baseSalary / workingDays;
-      const payForPresent = presentDays * dailyRate;
+      const payForPresent = presentEquivalent * dailyRate;
       const payForLeave = leaveDays * dailyRate; // Paid leave
       const payForHalfDay = halfDays * dailyRate * 0.5;
       const absentDeduction = absentDays * dailyRate; // No pay for absent (already excluded from gross)
@@ -159,6 +252,7 @@ function PayrollManager() {
         workingDays,
         attendanceBreakdown: {
           presentDays,
+          presentEquivalent, // payable present-day equivalents (pro-rated by hours)
           absentDays,
           leaveDays,
           halfDays
@@ -175,6 +269,14 @@ function PayrollManager() {
         },
         attendanceRecords
       });
+
+      // Pulse v2 — load whether this month is already marked paid.
+      try {
+        const ps = await window.electron.getPayrollPaidStatus(selectedEmployee, month, year);
+        setPaidStatus(ps?.success ? { isPaid: ps.data.isPaid, paidAt: ps.data.paidAt } : { isPaid: false, paidAt: null });
+      } catch (_) {
+        setPaidStatus({ isPaid: false, paidAt: null });
+      }
     } catch (error) {
       console.error('Failed to calculate payroll:', error);
       window.toast.error('Error calculating payroll: ' + error.message);
@@ -671,10 +773,32 @@ function PayrollManager() {
           {/* Summary Cards */}
           <div className="form-section">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <h3 style={{ margin: 0 }}>
+              <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
                 Payroll for {payrollData.employee.full_name || payrollData.employee.fullName} - {new Date(2000, payrollData.month - 1).toLocaleString('en-IN', { month: 'long' })} {payrollData.year}
+                {paidStatus.isPaid && (
+                  <span
+                    className="badge badge-success"
+                    title={paidStatus.paidAt ? `Marked paid on ${new Date(paidStatus.paidAt).toLocaleString('en-IN')}` : 'Paid'}
+                    style={{ fontSize: '12px' }}
+                  >
+                    ✓ Paid
+                  </span>
+                )}
               </h3>
               <div style={{ display: 'flex', gap: '8px', marginLeft: '12px' }}>
+                {/* Pulse v2 (item 5) — Mark this month paid / unpaid. */}
+                <button
+                  className="btn"
+                  onClick={handleTogglePaid}
+                  disabled={savingPaid}
+                  style={{
+                    background: paidStatus.isPaid ? '#6b7280' : '#16a34a',
+                    color: 'white', border: 'none'
+                  }}
+                  title={paidStatus.isPaid ? 'Revert to unpaid' : 'Mark this month as paid'}
+                >
+                  {savingPaid ? '…' : paidStatus.isPaid ? '↩ Mark Unpaid' : '💰 Mark as Paid'}
+                </button>
                 <button
                   className="btn btn-primary"
                   onClick={printPayslip}
@@ -772,7 +896,20 @@ function PayrollManager() {
                   <td></td>
                 </tr>
                 <tr>
-                  <td>&nbsp;&nbsp;&nbsp;&nbsp;Present Days ({payrollData.attendanceBreakdown.presentDays} days × {formatCurrency(payrollData.salaryComponents.dailyRate)})</td>
+                  <td>
+                    &nbsp;&nbsp;&nbsp;&nbsp;Present (payable):&nbsp;
+                    {/* Pulse v2 (item 6) — auto pro-rated by hours; admin can override. */}
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.05"
+                      value={payrollData.attendanceBreakdown.presentEquivalent}
+                      onChange={(e) => recomputeWithPayable(e.target.value)}
+                      style={{ width: '70px', padding: '2px 6px', margin: '0 4px' }}
+                      title="Payable present-day equivalents. Auto-suggested from hours worked — edit to override."
+                    />
+                    of {payrollData.attendanceBreakdown.presentDays} days × {formatCurrency(payrollData.salaryComponents.dailyRate)}
+                  </td>
                   <td style={{ textAlign: 'right' }}>{formatCurrency(payrollData.salaryComponents.payForPresent)}</td>
                 </tr>
                 <tr>

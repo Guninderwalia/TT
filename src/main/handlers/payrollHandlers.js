@@ -74,6 +74,78 @@ function register(ipcMain, db) {
     }
   });
 
+  // Pulse v2 — fetch the paid status for one employee/month so the UI can
+  // show a Paid badge.
+  ipcMain.handle('payroll:getPaidStatus', async (event, { userId, month, year } = {}) => {
+    try {
+      if (!userId || !month || !year) return { success: false, message: 'userId, month, year required' };
+      const row = await db.get(
+        `SELECT status, paid_at, paid_by FROM payroll
+         WHERE user_id = ? AND payroll_month = ? AND payroll_year = ?`,
+        [userId, month, year]
+      );
+      const isPaid = row && String(row.status || '').toLowerCase() === 'paid';
+      return { success: true, data: { isPaid: !!isPaid, paidAt: row?.paid_at || null, paidBy: row?.paid_by || null } };
+    } catch (error) {
+      console.error('Get paid status error:', error);
+      return { success: false, message: 'Failed to read paid status' };
+    }
+  });
+
+  // Pulse v2 — mark a month's payroll Paid / Unpaid. Upserts the payroll row
+  // (the manager computes figures live, so we persist the amounts the admin is
+  // looking at). Admin/MD only; audited.
+  ipcMain.handle('payroll:setPaidStatus', async (event, { userId, month, year, isPaid, baseSalary, grossAmount, netAmount, currentUserId } = {}) => {
+    try {
+      if (!userId || !month || !year) return { success: false, message: 'userId, month, year required' };
+      const actorId = (event?.sender?.id) || currentUserId || null;
+      if (!actorId) return { success: false, message: 'Not authenticated' };
+      const caller = await db.get(
+        `SELECT r.name AS role_name FROM users u LEFT JOIN roles r ON u.role_id = r.id WHERE u.id = ?`,
+        [actorId]
+      );
+      const role = ((caller && caller.role_name) || '').toLowerCase();
+      if (!['admin', 'administrator', 'md', 'managing director'].includes(role)) {
+        return { success: false, message: 'Only Admin or MD can mark payroll paid' };
+      }
+
+      const status = isPaid ? 'Paid' : 'Pending';
+      const paidAt = isPaid ? new Date().toISOString() : null;
+      const paidBy = isPaid ? actorId : null;
+
+      const existing = await db.get(
+        `SELECT * FROM payroll WHERE user_id = ? AND payroll_month = ? AND payroll_year = ?`,
+        [userId, month, year]
+      );
+      if (existing) {
+        await db.run(
+          `UPDATE payroll SET status = ?, paid_at = ?, paid_by = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+          [status, paidAt, paidBy, existing.id]
+        );
+      } else {
+        await db.run(
+          `INSERT INTO payroll
+             (id, user_id, payroll_month, payroll_year, base_salary, gross_amount, net_amount, status, paid_at, paid_by)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [uuidv4(), userId, month, year, Number(baseSalary) || 0, Number(grossAmount) || 0, Number(netAmount) || 0, status, paidAt, paidBy]
+        );
+      }
+
+      await writeAudit(db, actorId, {
+        action: isPaid ? 'PAYROLL_MARK_PAID' : 'PAYROLL_MARK_UNPAID',
+        entityType: 'PAYROLL',
+        entityId: `${userId}:${year}-${String(month).padStart(2, '0')}`,
+        oldValue: existing ? { status: existing.status } : null,
+        newValue: { userId, month, year, status, netAmount: Number(netAmount) || 0 }
+      });
+
+      return { success: true, message: isPaid ? 'Marked as paid' : 'Marked as unpaid', data: { isPaid: !!isPaid, paidAt, paidBy } };
+    } catch (error) {
+      console.error('Set paid status error:', error);
+      return { success: false, message: 'Failed to update paid status: ' + error.message };
+    }
+  });
+
   ipcMain.handle('payroll:getHistory', async (event, { userId }) => {
     try {
       const history = await db.all(

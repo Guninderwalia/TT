@@ -69,6 +69,13 @@ async function runMigrations(db) {
     // (e.g. medical note). All nullable + additive.
     await addAttachmentColumnsToLeaveRequests(db);
 
+    // Pulse v2 — track who marked a month's payroll as paid, and when.
+    await addPaidColumnsToPayroll(db);
+
+    // Pulse v2 — per-day worked fraction so partial days (e.g. 4 hrs) can be
+    // paid pro-rata instead of as a full day.
+    await addWorkedFractionToAttendance(db);
+
     // v4.6 — User session tracking (login fingerprint, IP, UA) so a user
     // can see other devices logged into their account and revoke them.
     await createUserSessionsTableIfNeeded(db);
@@ -621,6 +628,48 @@ async function addAttachmentColumnsToLeaveRequests(db) {
     }
   } catch (error) {
     console.error('[MIGRATIONS] Error adding leave attachment columns:', error.message);
+  }
+}
+
+// Pulse v2 — paid-tracking columns on payroll. `status` already exists
+// (default 'Pending'); these record who marked it Paid and when.
+async function addPaidColumnsToPayroll(db) {
+  try {
+    const exists = await db.get(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name='payroll'"
+    );
+    if (!exists) return;
+    const cols = await db.all("PRAGMA table_info(payroll)");
+    const has = (n) => cols.some(c => c.name === n);
+    if (!has('paid_at')) {
+      await db.run('ALTER TABLE payroll ADD COLUMN paid_at DATETIME');
+      console.log('[MIGRATIONS] ✓ Added payroll.paid_at');
+    }
+    if (!has('paid_by')) {
+      await db.run('ALTER TABLE payroll ADD COLUMN paid_by TEXT');
+      console.log('[MIGRATIONS] ✓ Added payroll.paid_by');
+    }
+  } catch (error) {
+    console.error('[MIGRATIONS] Error adding payroll paid columns:', error.message);
+  }
+}
+
+// Pulse v2 — `worked_fraction` on attendance. NULL = treat as a normal full
+// present day (back-compat). A value in (0,1] lets a partial day (e.g. 4 of 9
+// hours → ~0.44) be paid pro-rata. Admin can override the auto-suggested value.
+async function addWorkedFractionToAttendance(db) {
+  try {
+    const exists = await db.get(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name='attendance'"
+    );
+    if (!exists) return;
+    const cols = await db.all("PRAGMA table_info(attendance)");
+    if (!cols.some(c => c.name === 'worked_fraction')) {
+      await db.run('ALTER TABLE attendance ADD COLUMN worked_fraction REAL');
+      console.log('[MIGRATIONS] ✓ Added attendance.worked_fraction');
+    }
+  } catch (error) {
+    console.error('[MIGRATIONS] Error adding attendance.worked_fraction:', error.message);
   }
 }
 

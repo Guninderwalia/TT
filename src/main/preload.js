@@ -52,6 +52,9 @@ function exposeElectronAPI() {
   addExpense: (payrollId, category, amount, description) =>
     ipcRenderer.invoke('payroll:addExpense', { payrollId, category, amount, description }),
   getPayrollHistory: (userId) => ipcRenderer.invoke('payroll:getHistory', { userId }),
+  getPayrollPaidStatus: (userId, month, year) =>
+    ipcRenderer.invoke('payroll:getPaidStatus', { userId, month, year }),
+  setPayrollPaidStatus: (args) => ipcRenderer.invoke('payroll:setPaidStatus', args),
 
   // Leave
   requestLeave: (leaveTypeId, startDate, endDate, reason, userId, opts = {}) =>

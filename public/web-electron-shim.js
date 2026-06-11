@@ -184,6 +184,10 @@
     addExpense: (payrollId, category, amount, description) =>
       invoke('payroll:addExpense', { payrollId, category, amount, description }),
     getPayrollHistory: (userId) => invoke('payroll:getHistory', { userId }),
+    getPayrollPaidStatus: (userId, month, year) =>
+      invoke('payroll:getPaidStatus', { userId, month, year }),
+    setPayrollPaidStatus: (args) =>
+      invoke('payroll:setPaidStatus', { ...(args || {}), currentUserId: (args && args.currentUserId) || cachedUserId() }),
 
     // Leave — note the half-day opts that preload added; the shim now forwards
     // them so half-day leave requests submitted from the web behave the same.
