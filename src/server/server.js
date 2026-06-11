@@ -159,6 +159,10 @@ async function registerAll(db) {
   require('./handlers/settingsHandlers').register(ipcMain, db);
   require('./handlers/departmentHandlers').register(ipcMain, db);
   require('./handlers/documentHandlers').register(ipcMain, db);
+  // v5.2 — payroll handlers were never registered in web/server mode, so
+  // payroll:getData / getPaidStatus / setPaidStatus (Mark Paid) 404'd on the
+  // live web app. Register them here too.
+  require('./handlers/payrollHandlers').register(ipcMain, db);
 
   // v4.4.1 — Excel parse/validate handlers (previously inline in main.js, so
   // server mode never had them). employee:bulkCreate IS in employeeHandlers.
