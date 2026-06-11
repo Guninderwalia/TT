@@ -1,6 +1,7 @@
 const { v4: uuidv4 } = require('uuid');
 const { writeAudit } = require('./_auditHelper');
 const { canAccessUser, denied } = require('./_authz');
+const { emailUser } = require('../mailer');
 
 function register(ipcMain, db) {
   ipcMain.handle('payroll:getData', async (event, { userId, month, year }) => {
@@ -141,6 +142,15 @@ function register(ipcMain, db) {
         newValue: { userId, month, year, status, netAmount: Number(netAmount) || 0 }
       });
 
+      // v5.4 — email the employee when their salary is marked paid (best-effort).
+      if (isPaid) {
+        const monthName = new Date(2000, (Number(month) || 1) - 1).toLocaleString('en-IN', { month: 'long' });
+        emailUser(db, userId, `💰 Your ${monthName} ${year} salary has been paid`,
+          'Salary paid',
+          `<p>Your salary for <strong>${monthName} ${year}</strong> has been marked as <strong>paid</strong>` +
+          (Number(netAmount) ? ` (net ₹${Number(netAmount).toLocaleString('en-IN')})` : '') + `.</p>`
+        );
+      }
       return { success: true, message: isPaid ? 'Marked as paid' : 'Marked as unpaid', data: { isPaid: !!isPaid, paidAt, paidBy } };
     } catch (error) {
       console.error('Set paid status error:', error);

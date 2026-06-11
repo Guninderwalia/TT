@@ -100,7 +100,7 @@ function HelpGuidesModal({ isOpen, onClose, roleClass }) {
           <div style={{ fontSize: 13.5, color: 'var(--text, #f3f4f6)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', padding: '3px 0' }}>
               <span style={{ color: 'var(--text-2, #94a3b8)' }}>Version</span>
-              <strong>Production v5.3</strong>
+              <strong>Production v5.4</strong>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', padding: '3px 0' }}>
               <span style={{ color: 'var(--text-2, #94a3b8)' }}>Developed by</span>

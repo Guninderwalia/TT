@@ -3,6 +3,7 @@ const { differenceInCalendarDays } = require('date-fns');
 const { writeAudit } = require('./_auditHelper');
 const { canAccessUser, denied } = require('./_authz');
 const { getOfficeDate } = require('../../utils/officeTime');
+const { emailUser } = require('../mailer');
 const path = require('path');
 const fs = require('fs');
 let _electronApp = null;
@@ -423,6 +424,13 @@ function register(ipcMain, db) {
            VALUES (?, ?, ?, ?, ?)`,
           [approvalId, 'leave_request', requestId, userId, approver.id]
         );
+        // v5.4 — email the approver that a request awaits their decision.
+        emailUser(db, approver.id, '📩 A leave request needs your approval',
+          'New leave request',
+          `<p><strong>${user.full_name || 'An employee'}</strong> requested leave for ` +
+          `<strong>${startDate} → ${endDate}</strong> (${daysCount} day${daysCount === 1 ? '' : 's'}).</p>` +
+          `<p>Open <a href="https://tasktango.fly.dev" style="color:#a5b4fc">Task Tango Pulse</a> → Leave Approvals to review it.</p>`
+        );
       } else {
         console.warn('[LEAVE] No approver found (no lead, no admin/MD) — request will be unassigned:', requestId);
       }
@@ -771,6 +779,12 @@ function register(ipcMain, db) {
          VALUES (?, ?, ?, ?, ?, ?)`,
         [notifId, request.user_id, 'Leave Approved', 'Your leave request has been approved', 'info', requestId]
       );
+      // v5.4 — also email the employee (best-effort).
+      emailUser(db, request.user_id, '✅ Your leave was approved',
+        'Leave approved',
+        `<p>Your leave request for <strong>${request.start_date} → ${request.end_date}</strong> ` +
+        `(${request.days_count} day${request.days_count === 1 ? '' : 's'}) has been <strong>approved</strong>.</p>`
+      );
 
       await writeLeaveAudit(db, approverId, {
         action: 'LEAVE_APPROVE',
@@ -818,6 +832,12 @@ function register(ipcMain, db) {
         `INSERT INTO notifications (id, user_id, title, message, type, related_id)
          VALUES (?, ?, ?, ?, ?, ?)`,
         [notifId, request.user_id, 'Leave Rejected', `Your leave request was rejected: ${reason}`, 'warning', requestId]
+      );
+      // v5.4 — email the employee about the rejection (best-effort).
+      emailUser(db, request.user_id, '❌ Your leave request was declined',
+        'Leave declined',
+        `<p>Your leave request for <strong>${request.start_date} → ${request.end_date}</strong> was <strong>declined</strong>.</p>` +
+        `<p style="color:#cbd5e1">Reason: ${reason}</p>`
       );
 
       const rejecterId = currentUserId || event?.sender?.id;
