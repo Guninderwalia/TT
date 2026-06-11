@@ -1,5 +1,11 @@
 const { v4: uuidv4 } = require('uuid');
 const { writeAudit } = require('./_auditHelper');
+// Pulse v2 — use the office timezone for "today" so the live status snapshot
+// matches the date that breaks / sign-ins are stamped under. Using raw UTC
+// here made the dashboard read the PREVIOUS office day during the early-
+// morning IST window (UTC is 5.5h behind), so a started break showed as
+// "Working" instead of "On Break".
+const { getOfficeDate } = require('../../utils/officeTime');
 
 /**
  * SQLite-backed time logging handlers. Overrides the legacy JSON-store
@@ -127,7 +133,9 @@ function register(ipcMain, db) {
     try {
       // departmentId is OPTIONAL — leads pass theirs to scope to their team,
       // admins omit it for a company-wide snapshot used by the admin dashboard.
-      const today = new Date().toISOString().split('T')[0];
+      // Office-zone "today" so this matches the date breaks/sign-ins are
+      // stamped under (see import note above).
+      const today = getOfficeDate();
       const params = [today, today];
       let sql = `SELECT u.id          AS user_id,
                         u.full_name   AS full_name,

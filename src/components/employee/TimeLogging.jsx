@@ -258,6 +258,13 @@ function TimeLogging({ user, canEdit = false }) {
     const currentTime = now.toTimeString().slice(0, 5);
 
     if (!times.startTime) return 'Not Started';
+    // Pulse v2 — a break that's been STARTED but not yet ended means the
+    // person is on break right now. Previously this only returned 'On Break'
+    // when BOTH start and end were set (a completed break), so an in-progress
+    // break wrongly showed "Currently Working".
+    if (times.breakStartTime && !times.breakEndTime) {
+      return 'On Break';
+    }
     if (times.breakStartTime && times.breakEndTime) {
       if (currentTime >= times.breakStartTime && currentTime < times.breakEndTime) {
         return 'On Break';
@@ -396,6 +403,41 @@ function TimeLogging({ user, canEdit = false }) {
   // otherwise UK users (who default to UTC) see the buttons gated for
   // hours of every day when the office (IST) is already on the next date.
   const isToday = selectedDate === getOfficeDate();
+
+  // Pulse v2 (item 10) — break safeguards.
+  // 1) Confirm before starting a break so an accidental click doesn't stamp
+  //    one. 2) Warn (but don't force-end) once a break passes 30 minutes.
+  const BREAK_SOFT_LIMIT_MIN = 30;
+  const [nowTick, setNowTick] = useState(Date.now());
+  const onBreakNow = isToday && !!timeLog.breakStartTime && !timeLog.breakEndTime;
+
+  // While a break is in progress, re-render every 30s so the elapsed-minutes
+  // warning stays current without a manual refresh.
+  useEffect(() => {
+    if (!onBreakNow) return;
+    const t = setInterval(() => setNowTick(Date.now()), 30000);
+    return () => clearInterval(t);
+  }, [onBreakNow]);
+
+  const breakElapsedMinutes = () => {
+    if (!onBreakNow) return 0;
+    const m = (timeLog.breakStartTime || '').match(/^(\d{1,2}):(\d{2})/);
+    if (!m) return 0;
+    const startMin = parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
+    const now = new Date();
+    const nowMin = now.getHours() * 60 + now.getMinutes();
+    return Math.max(0, nowMin - startMin);
+  };
+
+  const handleStartBreak = () => {
+    const ok = window.confirm(
+      '☕ Start your break now?\n\n' +
+      'Breaks are meant to be around ' + BREAK_SOFT_LIMIT_MIN + ' minutes. ' +
+      'You can take your break in smaller parts — use “Add Event → Break” to log additional short breaks.\n\n' +
+      'Click OK to start your break, or Cancel to keep working.'
+    );
+    if (ok) stampNow('breakStartTime');
+  };
 
   const handleEdit = (logId) => {
     const log = timeLogs.find(l => l.id === logId);
@@ -899,7 +941,7 @@ function TimeLogging({ user, canEdit = false }) {
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
               <button
                 type="button"
-                onClick={() => stampNow('breakStartTime')}
+                onClick={handleStartBreak}
                 disabled={!isToday || loading || !timeLog.startTime || !!timeLog.breakStartTime || !!timeLog.endTime}
                 title={timeLog.breakStartTime ? `Break started at ${timeLog.breakStartTime}` : (!timeLog.startTime ? 'Sign in on the Attendance page first' : 'Stamp your break start time')}
                 style={{
@@ -936,6 +978,18 @@ function TimeLogging({ user, canEdit = false }) {
             {isToday && !timeLog.startTime && (
               <p style={{ marginTop: 12, marginBottom: 0, fontSize: 12, color: '#f59e0b' }}>
                 ⓘ Sign in on the <strong>Attendance</strong> page to start your day — the start time will appear here automatically.
+              </p>
+            )}
+            {/* Pulse v2 (item 10) — soft 30-minute break warning. nowTick keeps
+                the elapsed figure fresh; we never auto-end the break. */}
+            {onBreakNow && breakElapsedMinutes() >= BREAK_SOFT_LIMIT_MIN && (
+              <p data-tick={nowTick} style={{
+                marginTop: 12, marginBottom: 0, fontSize: 13, fontWeight: 600,
+                color: '#fff', background: 'rgba(239,68,68,0.85)',
+                padding: '8px 12px', borderRadius: 8
+              }}>
+                ⚠️ You've been on break for {breakElapsedMinutes()} minutes — breaks are meant to be about {BREAK_SOFT_LIMIT_MIN} minutes.
+                Please tap <strong>End Break</strong> when you're back.
               </p>
             )}
           </div>
