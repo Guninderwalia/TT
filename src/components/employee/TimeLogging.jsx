@@ -404,6 +404,15 @@ function TimeLogging({ user, canEdit = false }) {
   // hours of every day when the office (IST) is already on the next date.
   const isToday = selectedDate === getOfficeDate();
 
+  // Pulse v2 — confirm before starting a break so an accidental click on the
+  // "Start Break" button doesn't stamp one.
+  const handleStartBreak = () => {
+    const ok = window.confirm(
+      '☕ Start your break now?\n\nClick OK to start your break, or Cancel to keep working.'
+    );
+    if (ok) stampNow('breakStartTime');
+  };
+
   const handleEdit = (logId) => {
     const log = timeLogs.find(l => l.id === logId);
     if (log) {
@@ -906,7 +915,7 @@ function TimeLogging({ user, canEdit = false }) {
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
               <button
                 type="button"
-                onClick={() => stampNow('breakStartTime')}
+                onClick={handleStartBreak}
                 disabled={!isToday || loading || !timeLog.startTime || !!timeLog.breakStartTime || !!timeLog.endTime}
                 title={timeLog.breakStartTime ? `Break started at ${timeLog.breakStartTime}` : (!timeLog.startTime ? 'Sign in on the Attendance page first' : 'Stamp your break start time')}
                 style={{
