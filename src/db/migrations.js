@@ -72,10 +72,6 @@ async function runMigrations(db) {
     // Pulse v2 — track who marked a month's payroll as paid, and when.
     await addPaidColumnsToPayroll(db);
 
-    // Pulse v2 — per-day worked fraction so partial days (e.g. 4 hrs) can be
-    // paid pro-rata instead of as a full day.
-    await addWorkedFractionToAttendance(db);
-
     // Pulse v2 — Ask Pulse AI assistant conversation storage (one rolling
     // thread per user).
     await createPulseConversationsTableIfNeeded(db);
@@ -655,25 +651,6 @@ async function addPaidColumnsToPayroll(db) {
     }
   } catch (error) {
     console.error('[MIGRATIONS] Error adding payroll paid columns:', error.message);
-  }
-}
-
-// Pulse v2 — `worked_fraction` on attendance. NULL = treat as a normal full
-// present day (back-compat). A value in (0,1] lets a partial day (e.g. 4 of 9
-// hours → ~0.44) be paid pro-rata. Admin can override the auto-suggested value.
-async function addWorkedFractionToAttendance(db) {
-  try {
-    const exists = await db.get(
-      "SELECT name FROM sqlite_master WHERE type='table' AND name='attendance'"
-    );
-    if (!exists) return;
-    const cols = await db.all("PRAGMA table_info(attendance)");
-    if (!cols.some(c => c.name === 'worked_fraction')) {
-      await db.run('ALTER TABLE attendance ADD COLUMN worked_fraction REAL');
-      console.log('[MIGRATIONS] ✓ Added attendance.worked_fraction');
-    }
-  } catch (error) {
-    console.error('[MIGRATIONS] Error adding attendance.worked_fraction:', error.message);
   }
 }
 
