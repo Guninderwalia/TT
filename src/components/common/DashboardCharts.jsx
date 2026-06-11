@@ -93,10 +93,32 @@ const cartesianOptions = {
 };
 
 export function ChartCard({ title, height = 260, children, isEmpty }) {
+  // Pulse v2 — ref to the chart body so the Export PDF button can grab the
+  // underlying <canvas> and export it on the dark theme (no more white sheets).
+  const bodyRef = React.useRef(null);
+  const handleExport = async () => {
+    const { exportChartElementToPdf } = await import('../../utils/chartPdf');
+    await exportChartElementToPdf(bodyRef.current, title);
+  };
   return (
     <div className="chart-card">
-      <h3 className="chart-card-title">{title}</h3>
-      <div className="chart-card-body" style={{ height }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+        <h3 className="chart-card-title" style={{ margin: 0 }}>{title}</h3>
+        {!isEmpty && (
+          <button
+            onClick={handleExport}
+            title="Export this chart as a PDF"
+            style={{
+              fontSize: 11, padding: '4px 10px', borderRadius: 6, cursor: 'pointer',
+              background: 'rgba(255,255,255,0.08)', color: 'inherit',
+              border: '1px solid rgba(255,255,255,0.15)'
+            }}
+          >
+            📄 Export PDF
+          </button>
+        )}
+      </div>
+      <div ref={bodyRef} className="chart-card-body" style={{ height }}>
         {isEmpty
           ? <div className="chart-empty">No data yet</div>
           : children}
