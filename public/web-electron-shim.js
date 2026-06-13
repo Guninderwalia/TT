@@ -410,8 +410,8 @@
       invoke('event:getByDate', { userId, date }),
     createEvent: (userId, date, time, activityType, notes) =>
       invoke('event:create', { userId, date, time, activityType, notes }),
-    updateEvent: (eventId, time, activityType, notes) =>
-      invoke('event:update', { eventId, time, activityType, notes }),
+    updateEvent: (eventId, time, activityType, notes, currentUserId) =>
+      invoke('event:update', { eventId, time, activityType, notes, currentUserId: currentUserId || cachedUserId() }),
     deleteEvent: (eventId, currentUserId) =>
       invoke('event:delete', { eventId, currentUserId: currentUserId || cachedUserId() }),
     getEventsByRange: (userId, startDate, endDate) =>

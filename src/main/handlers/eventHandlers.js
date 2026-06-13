@@ -49,8 +49,29 @@ function register(ipcMain, db) {
   });
 
   // Update an event
+  // v5.6 — Only ADMINS / MD may edit events (matches event:delete). This both
+  // gives admins full edit rights over anyone's activity log AND closes the
+  // previous IDOR (the handler had no auth check, so any caller could edit any
+  // event by id). Trustworthy caller id = x-user-id header (mirrored to
+  // event.sender.id by webServer.js); falls back to currentUserId on desktop.
   ipcMain.handle('event:update', async (event, { eventId, time, activityType, notes, currentUserId }) => {
     try {
+      const actorId = (event?.sender?.id) || currentUserId || null;
+      if (!actorId) {
+        return { success: false, message: 'Not authenticated' };
+      }
+      const caller = await db.get(
+        `SELECT r.name AS role_name
+           FROM users u LEFT JOIN roles r ON u.role_id = r.id
+          WHERE u.id = ?`,
+        [actorId]
+      );
+      const role = ((caller && caller.role_name) || '').toLowerCase();
+      const isPrivileged = ['admin', 'administrator', 'md', 'managing director'].includes(role);
+      if (!isPrivileged) {
+        return { success: false, message: 'Only an admin can edit events' };
+      }
+
       const before = await db.get('SELECT * FROM events WHERE id = ?', [eventId]);
       const updatedAt = new Date().toISOString();
 
@@ -61,7 +82,7 @@ function register(ipcMain, db) {
         [time, activityType, notes || '', updatedAt, eventId]
       );
 
-      await writeAudit(db, currentUserId || (before && before.user_id), {
+      await writeAudit(db, actorId, {
         action: 'EVENT_UPDATE',
         entityType: 'EVENT',
         entityId: eventId,

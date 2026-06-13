@@ -20,12 +20,16 @@ import { generatePdf } from '../../utils/pdf/pdfGenerator';
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 function TimeLogging({ user, canEdit = false }) {
-  // v5.1 — Only ADMINS / MD may delete activity-log events. Everyone else
-  // (leads, managers, employees) can ADD events but not delete them, so the
-  // audit trail of a day can't be quietly erased. Enforced server-side too
-  // (event:delete checks the caller's role).
+  // v5.6 — ADMINS / MD have full rights to EDIT and DELETE anyone's activity-log
+  // events. `canEdit` is the admin-context signal: AdminTimeLogging renders this
+  // component with canEdit={true} and the SELECTED EMPLOYEE as `user`, so a
+  // role check on `user` alone would (wrongly) read the employee's role. We
+  // therefore treat canEdit as "an admin is managing this log". We also allow
+  // it when the displayed user is themselves an admin viewing their own log.
+  // The server (event:update / event:delete) independently enforces admin/MD,
+  // so even if a non-admin saw these buttons the action would be rejected.
   const _role = (user?.role_name || user?.role || '').toLowerCase();
-  const canDeleteEvents = ['admin', 'administrator', 'md', 'managing director'].includes(_role);
+  const canManageEvents = canEdit || ['admin', 'administrator', 'md', 'managing director'].includes(_role);
 
   const [selectedDate, setSelectedDate] = useState(getOfficeDate());
   const [timeLog, setTimeLog] = useState({
@@ -604,8 +608,8 @@ function TimeLogging({ user, canEdit = false }) {
   };
 
   const handleDeleteEvent = async (eventId) => {
-    if (!canDeleteEvents) {
-      window.toast?.error?.('Only an admin or team lead can delete activity-log events.');
+    if (!canManageEvents) {
+      window.toast?.error?.('Only an admin can delete activity-log events.');
       return;
     }
     try {
@@ -616,10 +620,58 @@ function TimeLogging({ user, canEdit = false }) {
         setSuccessMessage('Event deleted successfully!');
         setTimeout(() => setSuccessMessage(''), 3000);
         await loadEvents();
+      } else {
+        window.toast?.error?.(result.message || 'Failed to delete event');
       }
     } catch (error) {
       console.error('Error deleting event:', error);
       setValidationErrors({ event: 'Failed to delete event' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // v5.6 — Admin event editing. Opens an inline editor pre-filled from the
+  // event (start time, end time decoded from the [end=HH:MM] notes prefix,
+  // activity type, and the clean notes), then saves via event:update.
+  const [editingEventId, setEditingEventId] = useState(null);
+  const [eventEditForm, setEventEditForm] = useState({ time: '', endTime: '', activityType: 'admin_work', notes: '' });
+
+  const handleStartEditEvent = (ev) => {
+    const { endTime, cleanNotes } = parseEventNotes(ev.notes);
+    setEditingEventId(ev.id);
+    setEventEditForm({
+      time: (ev.time || '').slice(0, 5),
+      endTime: (endTime || '').slice(0, 5),
+      activityType: ev.activityType || ev.activity_type || 'admin_work',
+      notes: cleanNotes || ''
+    });
+  };
+
+  const handleCancelEditEvent = () => {
+    setEditingEventId(null);
+  };
+
+  const handleSaveEditEvent = async () => {
+    if (!canManageEvents || !editingEventId) return;
+    const f = eventEditForm;
+    if (!f.time) { window.toast?.warning?.('Please set a start time.'); return; }
+    if (f.endTime && f.endTime <= f.time) { window.toast?.warning?.('End time must be after start time.'); return; }
+    try {
+      setLoading(true);
+      const notesWithEnd = f.endTime ? `[end=${f.endTime}] ${f.notes || ''}`.trim() : (f.notes || '');
+      const result = await window.electron.updateEvent(editingEventId, f.time, f.activityType, notesWithEnd, user?.id);
+      if (result.success) {
+        setSuccessMessage('Event updated successfully!');
+        setTimeout(() => setSuccessMessage(''), 3000);
+        setEditingEventId(null);
+        await loadEvents();
+      } else {
+        window.toast?.error?.(result.message || 'Failed to update event');
+      }
+    } catch (error) {
+      console.error('Error updating event:', error);
+      window.toast?.error?.('Failed to update event: ' + error.message);
     } finally {
       setLoading(false);
     }
@@ -2011,40 +2063,93 @@ function TimeLogging({ user, canEdit = false }) {
                   const duration = endTime ? calcEventDuration(event.time, endTime) : null;
                   return (
                     <div key={event.id} className="event-item">
-                      <div className="event-header">
-                        <div className="event-time-type">
-                          <span className="event-time">
-                            🕐 {event.time}{endTime ? ` → ${endTime}` : ''}
-                          </span>
-                          {duration && (
-                            <span className="event-duration" style={{
-                              background: '#1f2937',
-                              color: '#a7f3d0',
-                              padding: '2px 8px',
-                              borderRadius: '10px',
-                              fontSize: '11px',
-                              fontWeight: 600
-                            }}>
-                              {duration}
-                            </span>
-                          )}
-                          <span className="event-type">
-                            {activity ? activity.label : typeId}
-                          </span>
+                      {editingEventId === event.id ? (
+                        /* v5.6 — Admin inline event editor */
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'flex-end' }}>
+                          <div>
+                            <label style={{ fontSize: 11, display: 'block', color: '#6b7280' }}>Start</label>
+                            <input type="text" placeholder="HH:MM" maxLength={5} inputMode="numeric"
+                              value={eventEditForm.time}
+                              onChange={(e) => setEventEditForm({ ...eventEditForm, time: e.target.value })}
+                              style={{ width: 72 }} />
+                          </div>
+                          <div>
+                            <label style={{ fontSize: 11, display: 'block', color: '#6b7280' }}>End</label>
+                            <input type="text" placeholder="HH:MM" maxLength={5} inputMode="numeric"
+                              value={eventEditForm.endTime}
+                              onChange={(e) => setEventEditForm({ ...eventEditForm, endTime: e.target.value })}
+                              style={{ width: 72 }} />
+                          </div>
+                          <div style={{ flex: '1 1 160px' }}>
+                            <label style={{ fontSize: 11, display: 'block', color: '#6b7280' }}>Activity</label>
+                            <select value={eventEditForm.activityType}
+                              onChange={(e) => setEventEditForm({ ...eventEditForm, activityType: e.target.value })}
+                              style={{ width: '100%' }}>
+                              {activityTypes.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
+                            </select>
+                          </div>
+                          <div style={{ flex: '1 1 100%' }}>
+                            <label style={{ fontSize: 11, display: 'block', color: '#6b7280' }}>Notes</label>
+                            <input type="text" value={eventEditForm.notes}
+                              onChange={(e) => setEventEditForm({ ...eventEditForm, notes: e.target.value })}
+                              placeholder="Notes (optional)" style={{ width: '100%' }} />
+                          </div>
+                          <div style={{ display: 'flex', gap: 6 }}>
+                            <button className="btn btn-primary" disabled={loading} onClick={handleSaveEditEvent}
+                              style={{ padding: '6px 14px', fontSize: 12 }}>Save</button>
+                            <button className="btn btn-secondary" disabled={loading} onClick={handleCancelEditEvent}
+                              style={{ padding: '6px 14px', fontSize: 12 }}>Cancel</button>
+                          </div>
                         </div>
-                        {canDeleteEvents && (
-                          <button
-                            onClick={() => handleDeleteEvent(event.id)}
-                            className="btn-delete-event"
-                            disabled={loading}
-                            title="Delete event"
-                          >
-                            🗑️
-                          </button>
-                        )}
-                      </div>
-                      {cleanNotes && (
-                        <div className="event-notes">{cleanNotes}</div>
+                      ) : (
+                        <>
+                          <div className="event-header">
+                            <div className="event-time-type">
+                              <span className="event-time">
+                                🕐 {event.time}{endTime ? ` → ${endTime}` : ''}
+                              </span>
+                              {duration && (
+                                <span className="event-duration" style={{
+                                  background: '#1f2937',
+                                  color: '#a7f3d0',
+                                  padding: '2px 8px',
+                                  borderRadius: '10px',
+                                  fontSize: '11px',
+                                  fontWeight: 600
+                                }}>
+                                  {duration}
+                                </span>
+                              )}
+                              <span className="event-type">
+                                {activity ? activity.label : typeId}
+                              </span>
+                            </div>
+                            {canManageEvents && (
+                              <div style={{ display: 'flex', gap: 6 }}>
+                                <button
+                                  onClick={() => handleStartEditEvent(event)}
+                                  className="btn-delete-event"
+                                  disabled={loading}
+                                  title="Edit event"
+                                  style={{ background: 'transparent' }}
+                                >
+                                  ✏️
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteEvent(event.id)}
+                                  className="btn-delete-event"
+                                  disabled={loading}
+                                  title="Delete event"
+                                >
+                                  🗑️
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                          {cleanNotes && (
+                            <div className="event-notes">{cleanNotes}</div>
+                          )}
+                        </>
                       )}
                     </div>
                   );

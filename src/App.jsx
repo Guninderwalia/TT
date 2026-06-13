@@ -40,7 +40,7 @@ applyTheme(getTheme());
 // Bump this single constant when packaging a new build. The label is rendered
 // in the bottom-right corner on every screen (incl. login) so it's easy to
 // confirm which version is running. Click the badge to open the About modal.
-const BUILD_VERSION = 'Production v5.5';
+const BUILD_VERSION = 'Production v5.6';
 const APP_DEVELOPER = 'Guninder Ahluwalia';
 const APP_YEAR      = new Date().getFullYear();
 

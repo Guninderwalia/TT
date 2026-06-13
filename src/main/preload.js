@@ -243,8 +243,8 @@ function exposeElectronAPI() {
     ipcRenderer.invoke('event:getByDate', { userId, date }),
   createEvent: (userId, date, time, activityType, notes) =>
     ipcRenderer.invoke('event:create', { userId, date, time, activityType, notes }),
-  updateEvent: (eventId, time, activityType, notes) =>
-    ipcRenderer.invoke('event:update', { eventId, time, activityType, notes }),
+  updateEvent: (eventId, time, activityType, notes, currentUserId) =>
+    ipcRenderer.invoke('event:update', { eventId, time, activityType, notes, currentUserId }),
   deleteEvent: (eventId, currentUserId) =>
     ipcRenderer.invoke('event:delete', { eventId, currentUserId }),
   getEventsByRange: (userId, startDate, endDate) =>
